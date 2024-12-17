@@ -128,6 +128,7 @@ paths:
       summary: 請求書由来の入金一覧を取得
       tags:
         - List
+      operationId: getInvoices
       parameters:
         - $ref: '#/components/parameters/CustomerId'
         - $ref: '#/components/parameters/SubscriptionId'
@@ -170,6 +171,7 @@ paths:
       summary: オンライン決済ページ由来の入金一覧を取得
       tags:
         - List
+      operationId: getCheckoutSessions
       parameters:
         - $ref: '#/components/parameters/CustomerId'
         - $ref: '#/components/parameters/SubscriptionId'
