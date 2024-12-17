@@ -19,4 +19,3 @@ jobs:
       - uses: stoplightio/spectral-action@latest
         with:
           file_glob: 'openapi.yaml'
-          spectral_ruleset: '@stoplight/spectral/rulesets/oas'
