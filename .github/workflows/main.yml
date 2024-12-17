@@ -2,6 +2,7 @@ name: Run Spectral on Pull Requests
 
 on:
   - pull_request
+  - workflow_dispatch
 
 jobs:
   build:
