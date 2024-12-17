@@ -1,0 +1,535 @@
+openapi: 3.1.0
+
+info:
+  title: Checkin API
+  version: 0.1.0
+  description: Checkin API
+
+paths:
+  /customer:
+    get:
+      summary: Customer を取得
+      tags:
+        - Customer
+      operationId: getCustomer
+      parameters:
+        - $ref: '#/components/parameters/CustomerId'
+        - name: traq_id
+          description: traQ ID
+          in: query
+          schema:
+            type: string
+        - name: email
+          description: Email
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              examples:
+                Customer:
+                  $ref: '#/components/examples/Customer'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      summary: Customer を作成
+      tags:
+        - Customer
+      operationId: postCustomer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostCustomerRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              examples:
+                Customer:
+                  $ref: '#/components/examples/Customer'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      summary: Customer を更新
+      tags:
+        - Customer
+      operationId: patchCustomer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostCustomerRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              examples:
+                Customer:
+                  $ref: '#/components/examples/Customer'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /invoice:
+    post:
+      summary: Invoice を作成
+      tags:
+        - Invoice
+      operationId: postInvoice
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostInvoiceRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              examples:
+                Invoice:
+                  $ref: '#/components/examples/Invoice'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /webhook/invoice-paid:
+    post:
+      summary: Webhook の invoice.paid イベントを受け取る
+      tags:
+        - Webhook
+      operationId: postWebhookInvoicePaid
+      parameters:
+        - name: Stripe-Signature
+          description: Stripe が送信する認証情報
+          in: header
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            examples:
+              Invoice:
+                $ref: '#/components/examples/Invoice'
+      responses:
+        '204':
+          description: No content
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /list/invoices:
+    get:
+      summary: 請求書由来の入金一覧を取得
+      tags:
+        - List
+      parameters:
+        - $ref: '#/components/parameters/CustomerId'
+        - $ref: '#/components/parameters/SubscriptionId'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/StartingAfter'
+        - $ref: '#/components/parameters/EndingBefore'
+        - name: status
+          description: 請求書ステータス
+          in: query
+          schema:
+            type: string
+            enum:
+              - draft
+              - open
+              - paid
+              - uncollectible
+              - void
+        - name: collection_method
+          description: 請求書の支払い方法
+          in: query
+          schema:
+            type: string
+            enum:
+              - charge_automatically
+              - send_invoice
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetInvoicesResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /list/checkout-sessions:
+    get:
+      summary: オンライン決済ページ由来の入金一覧を取得
+      tags:
+        - List
+      parameters:
+        - $ref: '#/components/parameters/CustomerId'
+        - $ref: '#/components/parameters/SubscriptionId'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/StartingAfter'
+        - $ref: '#/components/parameters/EndingBefore'
+        - name: payment_intent_id
+          description: PaymentIntent ID
+          in: query
+          schema:
+            type: string
+        - name: status
+          description: Checkout Session のステータス
+          in: query
+          schema:
+            type: string
+            enum:
+              - complete
+              - expired
+              - open
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetCheckoutSessionsResponse'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+components:
+  examples:
+    Customer:
+      description: Customer オブジェクト
+      value:
+        id: cus_NffrFeUfNV2Hib
+        object: customer
+        address: null
+        balance: 0
+        created: 1680893993
+        currency: null
+        default_source: null
+        delinquent: false
+        description: null
+        discount: null
+        email: jennyrosen@example.com
+        invoice_prefix: 0759376C
+        invoice_settings:
+          custom_fields: null
+          default_payment_method: null
+          footer: null
+          rendering_options: null
+        livemode: false
+        metadata: {}
+        name: Jenny Rosen
+        next_invoice_sequence: 1
+        phone: null
+        preferred_locales: []
+        shipping: null
+        tax_exempt: none
+        test_clock: null
+    Invoice:
+      description: Invoice オブジェクト
+      value:
+        id: in_1MtHbELkdIwHu7ixl4OzzPMv
+        object: invoice
+        account_country: US
+        account_name: Stripe Docs
+        account_tax_ids: null
+        amount_due: 0
+        amount_paid: 0
+        amount_remaining: 0
+        amount_shipping: 0
+        application: null
+        application_fee_amount: null
+        attempt_count: 0
+        attempted: false
+        auto_advance: false
+        automatic_tax:
+          enabled: false
+          liablity: null
+          status: null
+        billing_reason: manual
+        charge: null
+        collection_method: charge_automatically
+        created: 1680644467
+        currency: usd
+        custom_fields: null
+        customer: cus_NeZwdNtLEOXuvB
+        customer_address: null
+        customer_email: jennyrosen@example.com
+        customer_name: Jenny Rosen
+        customer_phone: null
+        customer_shipping: null
+        customer_tax_exempt: none
+        customer_tax_ids: []
+        default_payment_method: null
+        default_source: null
+        default_tax_rates: []
+        description: null
+        discount: null
+        discounts: []
+        due_date: null
+        ending_balance: 0
+        footer: null
+        from_invoice: null
+        hosted_invoice_url: null
+        invoice_pdf: null
+        issuer:
+          type: self
+        last_finalization_error: null
+        latest_revision: null
+        lines:
+          object: list
+          data: []
+          has_more: false
+          total_count: 0
+          url: /v1/invoices/in_1MtHbELkdIwHu7ixl4OzzPMv/lines
+        livemode: false
+        metadata: {}
+        next_payment_attempt: null
+        number: null
+        on_behalf_of: null
+        paid: false
+        paid_out_of_band: false
+        payment_intent: null
+        payment_settings:
+          default_mandate: null
+          payment_method_options: null
+          payment_method_types: null
+        period_end: 1680644467
+        period_start: 1680644467
+        post_payment_credit_notes_amount: 0
+        pre_payment_credit_notes_amount: 0
+        quote: null
+        receipt_number: null
+        rendering_options: null
+        shipping_cost: null
+        shipping_details: null
+        shipping_balance: 0
+        statement_descriptor: null
+        status: draft
+        status_transitions:
+          finalized_at: null
+          marked_uncollectible_at: null
+          paid_at: null
+          voided_at: null
+        subscription: null
+        subtotal: 0
+        subtotal_excluding_tax: 0
+        tax: null
+        test_clock: null
+        total: 0
+        total_discount_amounts: []
+        total_excluding_tax: 0
+        total_tax_amounts: []
+        transfer_data: null
+        webhooks_delivered_at: 1680644467
+  parameters:
+    CustomerId:
+      name: customer_id
+      in: query
+      description: Customer ID
+      schema:
+        type: string
+        example: cus_NeZwdNtLEOXuvB
+    SubscriptionId:
+      name: subscription_id
+      in: query
+      description: Subscription ID
+      schema:
+        type: string
+        example: sub_NeZwdNtLEOXuvB
+    Limit:
+      name: limit
+      in: query
+      description: 取得件数
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+    StartingAfter:
+      name: starting_after
+      in: query
+      description: 指定された ID のオブジェクト以降のオブジェクトを取得
+      schema:
+        type: string
+    EndingBefore:
+      name: ending_before
+      in: query
+      description: 指定された ID のオブジェクト以前のオブジェクトを取得
+      schema:
+        type: string
+  responses:
+    Forbidden:
+      description: Forbidden
+    NotFound:
+      description: Not found
+    InternalServerError:
+      description: Internal server error
+  schemas:
+    CustomerData:
+      description: Customer の情報
+      type: object
+      properties:
+        id:
+          type: string
+          description: Customer ID
+          example: cus_NeZwdNtLEOXuvB
+        traq_id:
+          type: string
+          description: traQ ID
+          example: traP
+        email:
+          type: string
+          description: Email
+          example: jennyrosen@example.com
+        name:
+          type: string
+          description: Name
+          example: Jenny Rosen
+    PostCustomerRequest:
+      description: Customer 作成リクエスト
+      type: object
+      properties:
+        email:
+          type: string
+          description: Email
+          required: true
+        name:
+          type: string
+          description: Name
+          required: true
+        traq_id:
+          type: string
+          description: traQ ID
+    PostInvoiceRequest:
+      description: Invoice 作成リクエスト
+      type: object
+      properties:
+        customer_id:
+          type: string
+          description: Customer ID
+          required: true
+        product_id:
+          type: string
+          description: Product ID
+          required: true
+    GetInvoicesResponse:
+      description: 請求書由来の入金一覧
+      type: object
+      properties:
+        has_more:
+          type: boolean
+          description: 次のページがあるか
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Invoice ID
+                example: in_1MtHbELkdIwHu7ixl4OzzPMv
+              amount_due:
+                type: integer
+                description: 最終的に支払う金額
+                example: 0
+              amount_paid:
+                type: integer
+                description: 支払い済み金額
+                example: 0
+              amount_remaining:
+                type: integer
+                description: 支払い残高
+                example: 0
+              created:
+                type: integer
+                description: 作成日時 (Unix 時間)
+                example: 1680644467
+              customer:
+                $ref: '#/components/schemas/CustomerData'
+              status:
+                type: string
+                description: 請求書ステータス
+                enum:
+                  - draft
+                  - open
+                  - paid
+                  - uncollectible
+                  - void
+                example: draft
+              payment_intent:
+                type:
+                  - string
+                  - null
+                description: この請求書に関連付けられた PaymentIntent
+                example: null
+              product_id:
+                type: string
+                description: Product ID
+                example: prod_NWjs8kKbJWmuuc
+    GetCheckoutSessionsResponse:
+      description: オンライン決済ページ由来の入金一覧
+      type: object
+      properties:
+        has_more:
+          type: boolean
+          description: 次のページがあるか
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Checkout Session ID
+                example: cs_test_1234567890
+              amount_total:
+                type: integer
+                description: 支払い金額
+                example: 2198
+              amount_subtotal:
+                type: integer
+                description: 割引・税金を含まない支払い金額
+                example: 1998
+              created:
+                type: integer
+                description: 作成日時 (Unix 時間)
+                example: 1679600215
+              customer:
+                $ref: '#/components/schemas/CustomerData'
+              status:
+                type: string
+                description: Checkout Session のステータス
+                enum:
+                  - complete
+                  - expired
+                  - open
+                example: open
+              payment_intent:
+                type:
+                  - string
+                  - null
+                description: この Checkout Session に関連付けられた PaymentIntent
+                example: null
+              product_id:
+                type: string
+                description: Product ID
+                example: prod_NWjs8kKbJWmuuc
+
+tags:
+  - name: Customer
+    description: Customer API
+  - name: Invoice
+    description: Invoice API
+  - name: Webhook
+    description: Webhook API
+  - name: List
+    description: List API
