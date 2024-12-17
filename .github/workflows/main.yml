@@ -15,7 +15,13 @@ jobs:
       # Check out the repository
       - uses: actions/checkout@v3
 
-      # Run Spectral
-      - uses: stoplightio/spectral-action@latest
+      # Set up Node.js
+      - uses: actions/setup-node@v3
         with:
-          file_glob: 'openapi.yaml'
+          node-version: '16'
+
+      # Install dependencies
+      - run: npm install
+
+      # Run Spectral
+      - run: npx spectral lint openapi.yaml --ruleset @stoplight/spectral/rulesets/oas
