@@ -470,7 +470,7 @@ components:
               payment_intent:
                 type:
                   - string
-                  - null
+                  - "null"
                 description: この請求書に関連付けられた PaymentIntent
                 example: null
               product_id:
@@ -518,7 +518,7 @@ components:
               payment_intent:
                 type:
                   - string
-                  - null
+                  - "null"
                 description: この Checkout Session に関連付けられた PaymentIntent
                 example: null
               product_id:
