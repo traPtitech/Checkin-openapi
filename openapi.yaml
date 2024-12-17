@@ -128,6 +128,7 @@ paths:
       summary: 請求書由来の入金一覧を取得
       tags:
         - List
+      operationId: getInvoices
       parameters:
         - $ref: '#/components/parameters/CustomerId'
         - $ref: '#/components/parameters/SubscriptionId'
@@ -170,6 +171,7 @@ paths:
       summary: オンライン決済ページ由来の入金一覧を取得
       tags:
         - List
+      operationId: getCheckoutSessions
       parameters:
         - $ref: '#/components/parameters/CustomerId'
         - $ref: '#/components/parameters/SubscriptionId'
@@ -401,14 +403,15 @@ components:
         email:
           type: string
           description: Email
-          required: true
         name:
           type: string
           description: Name
-          required: true
         traq_id:
           type: string
           description: traQ ID
+      required:
+        - email
+        - name
     PostInvoiceRequest:
       description: Invoice 作成リクエスト
       type: object
@@ -416,11 +419,12 @@ components:
         customer_id:
           type: string
           description: Customer ID
-          required: true
         product_id:
           type: string
           description: Product ID
-          required: true
+      required:
+        - customer_id
+        - product_id
     GetInvoicesResponse:
       description: 請求書由来の入金一覧
       type: object
@@ -468,7 +472,7 @@ components:
               payment_intent:
                 type:
                   - string
-                  - null
+                  - "null"
                 description: この請求書に関連付けられた PaymentIntent
                 example: null
               product_id:
@@ -516,7 +520,7 @@ components:
               payment_intent:
                 type:
                   - string
-                  - null
+                  - "null"
                 description: この Checkout Session に関連付けられた PaymentIntent
                 example: null
               product_id:
