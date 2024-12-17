@@ -401,14 +401,15 @@ components:
         email:
           type: string
           description: Email
-          required: true
         name:
           type: string
           description: Name
-          required: true
         traq_id:
           type: string
           description: traQ ID
+      required:
+        - email
+        - name
     PostInvoiceRequest:
       description: Invoice 作成リクエスト
       type: object
@@ -416,11 +417,12 @@ components:
         customer_id:
           type: string
           description: Customer ID
-          required: true
         product_id:
           type: string
           description: Product ID
-          required: true
+      required:
+        - customer_id
+        - product_id
     GetInvoicesResponse:
       description: 請求書由来の入金一覧
       type: object
