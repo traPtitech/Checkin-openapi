@@ -21,7 +21,8 @@ jobs:
           node-version: '16'
 
       # Install dependencies
-      - run: npm install
+      - name: Install spectral
+        run: cd /home/runner/work && npm install --no-save @stoplight/spectral-cli@v6.14.2
 
       # Run Spectral
-      - run: npx spectral lint openapi.yaml --ruleset @stoplight/spectral/rulesets/oas
+      - run: npx spectral lint openapi.yaml
