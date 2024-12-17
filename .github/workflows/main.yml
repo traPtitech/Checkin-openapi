@@ -1,8 +1,11 @@
 name: Run Spectral on Pull Requests
 
 on:
-  - pull_request
-  - workflow_dispatch
+  pull_request:
+    types: [opened, synchronize]
+    branches:
+      - main
+  workflow_dispatch:
 
 jobs:
   build:
