@@ -29,9 +29,8 @@ paths:
           description: OK
           content:
             application/json:
-              examples:
-                Customer:
-                  $ref: '#/components/examples/Customer'
+              schema:
+                $ref: '#/components/schemas/Customer'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -51,9 +50,8 @@ paths:
           description: Created
           content:
             application/json:
-              examples:
-                Customer:
-                  $ref: '#/components/examples/Customer'
+              schema:
+                $ref: '#/components/schemas/Customer'
         '500':
           $ref: '#/components/responses/InternalServerError'
     patch:
@@ -71,9 +69,8 @@ paths:
           description: OK
           content:
             application/json:
-              examples:
-                Customer:
-                  $ref: '#/components/examples/Customer'
+              schema:
+                $ref: '#/components/schemas/Customer'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /invoice:
@@ -92,9 +89,8 @@ paths:
           description: Created
           content:
             application/json:
-              examples:
-                Invoice:
-                  $ref: '#/components/examples/Invoice'
+              schema:
+                $ref: '#/components/schemas/Invoice'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /webhook/invoice-paid:
@@ -113,9 +109,8 @@ paths:
       requestBody:
         content:
           application/json:
-            examples:
-              Invoice:
-                $ref: '#/components/examples/Invoice'
+            schema:
+              $ref: '#/components/schemas/Invoice'
       responses:
         '204':
           description: No content
@@ -160,7 +155,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GetInvoicesResponse'
+                $ref: '#/components/schemas/Invoice'
         '403':
           $ref: '#/components/responses/Forbidden'
         '500':
@@ -205,133 +200,6 @@ paths:
           $ref: '#/components/responses/InternalServerError'
 
 components:
-  examples:
-    Customer:
-      description: Customer オブジェクト
-      value:
-        id: cus_NffrFeUfNV2Hib
-        object: customer
-        address: null
-        balance: 0
-        created: 1680893993
-        currency: null
-        default_source: null
-        delinquent: false
-        description: null
-        discount: null
-        email: jennyrosen@example.com
-        invoice_prefix: 0759376C
-        invoice_settings:
-          custom_fields: null
-          default_payment_method: null
-          footer: null
-          rendering_options: null
-        livemode: false
-        metadata: {}
-        name: Jenny Rosen
-        next_invoice_sequence: 1
-        phone: null
-        preferred_locales: []
-        shipping: null
-        tax_exempt: none
-        test_clock: null
-    Invoice:
-      description: Invoice オブジェクト
-      value:
-        id: in_1MtHbELkdIwHu7ixl4OzzPMv
-        object: invoice
-        account_country: US
-        account_name: Stripe Docs
-        account_tax_ids: null
-        amount_due: 0
-        amount_paid: 0
-        amount_remaining: 0
-        amount_shipping: 0
-        application: null
-        application_fee_amount: null
-        attempt_count: 0
-        attempted: false
-        auto_advance: false
-        automatic_tax:
-          enabled: false
-          liablity: null
-          status: null
-        billing_reason: manual
-        charge: null
-        collection_method: charge_automatically
-        created: 1680644467
-        currency: usd
-        custom_fields: null
-        customer: cus_NeZwdNtLEOXuvB
-        customer_address: null
-        customer_email: jennyrosen@example.com
-        customer_name: Jenny Rosen
-        customer_phone: null
-        customer_shipping: null
-        customer_tax_exempt: none
-        customer_tax_ids: []
-        default_payment_method: null
-        default_source: null
-        default_tax_rates: []
-        description: null
-        discount: null
-        discounts: []
-        due_date: null
-        ending_balance: 0
-        footer: null
-        from_invoice: null
-        hosted_invoice_url: null
-        invoice_pdf: null
-        issuer:
-          type: self
-        last_finalization_error: null
-        latest_revision: null
-        lines:
-          object: list
-          data: []
-          has_more: false
-          total_count: 0
-          url: /v1/invoices/in_1MtHbELkdIwHu7ixl4OzzPMv/lines
-        livemode: false
-        metadata: {}
-        next_payment_attempt: null
-        number: null
-        on_behalf_of: null
-        paid: false
-        paid_out_of_band: false
-        payment_intent: null
-        payment_settings:
-          default_mandate: null
-          payment_method_options: null
-          payment_method_types: null
-        period_end: 1680644467
-        period_start: 1680644467
-        post_payment_credit_notes_amount: 0
-        pre_payment_credit_notes_amount: 0
-        quote: null
-        receipt_number: null
-        rendering_options: null
-        shipping_cost: null
-        shipping_details: null
-        shipping_balance: 0
-        statement_descriptor: null
-        status: draft
-        status_transitions:
-          finalized_at: null
-          marked_uncollectible_at: null
-          paid_at: null
-          voided_at: null
-        subscription: null
-        subtotal: 0
-        subtotal_excluding_tax: 0
-        tax: null
-        test_clock: null
-        total: 0
-        total_discount_amounts: []
-        total_excluding_tax: 0
-        total_tax_amounts: []
-        transfer_data: null
-        webhooks_delivered_at: 1680644467
   parameters:
     CustomerId:
       name: customer_id
@@ -376,7 +244,7 @@ components:
     InternalServerError:
       description: Internal server error
   schemas:
-    CustomerData:
+    Customer:
       description: Customer の情報
       type: object
       properties:
@@ -425,8 +293,8 @@ components:
       required:
         - customer_id
         - product_id
-    GetInvoicesResponse:
-      description: 請求書由来の入金一覧
+    Invoice:
+      description: Invoice の情報
       type: object
       properties:
         has_more:
@@ -458,7 +326,7 @@ components:
                 description: 作成日時 (Unix 時間)
                 example: 1680644467
               customer:
-                $ref: '#/components/schemas/CustomerData'
+                $ref: '#/components/schemas/Customer'
               status:
                 type: string
                 description: 請求書ステータス
@@ -472,7 +340,6 @@ components:
               payment_intent:
                 type:
                   - string
-                  - "null"
                 description: この請求書に関連付けられた PaymentIntent
                 example: null
               product_id:
@@ -508,7 +375,7 @@ components:
                 description: 作成日時 (Unix 時間)
                 example: 1679600215
               customer:
-                $ref: '#/components/schemas/CustomerData'
+                $ref: '#/components/schemas/Customer'
               status:
                 type: string
                 description: Checkout Session のステータス
@@ -520,7 +387,6 @@ components:
               payment_intent:
                 type:
                   - string
-                  - "null"
                 description: この Checkout Session に関連付けられた PaymentIntent
                 example: null
               product_id:
