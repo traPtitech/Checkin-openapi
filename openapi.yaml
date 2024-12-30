@@ -341,7 +341,7 @@ components:
                 type:
                   - string
                 description: この請求書に関連付けられた PaymentIntent
-                example: null
+                example: pi_3MtwBwLkdIwHu7ix28a3tqPa
               product_id:
                 type: string
                 description: Product ID
@@ -388,7 +388,7 @@ components:
                 type:
                   - string
                 description: この Checkout Session に関連付けられた PaymentIntent
-                example: null
+                example: pi_3MtwBwLkdIwHu7ix28a3tqPa
               product_id:
                 type: string
                 description: Product ID
