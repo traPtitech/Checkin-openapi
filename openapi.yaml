@@ -198,6 +198,65 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /admin:
+    get:
+      summary: 管理者の一覧を取得
+      tags:
+        - Admin
+      operationId: getAdmins
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Admin'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      summary: 管理者を作成
+      tags:
+        - Admin
+      operationId: postAdmin
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Admin'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Admin'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    delete:
+      summary: 管理者を削除
+      tags:
+        - Admin
+      operationId: deleteAdmin
+      parameters:
+        - name: id
+          in: query
+          description: 管理者の traQ ID
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: No content
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
 components:
   parameters:
@@ -244,6 +303,16 @@ components:
     InternalServerError:
       description: Internal server error
   schemas:
+    Admin:
+      description: 管理者の情報
+      type: object
+      properties:
+        id:
+          type: string
+          description: traQ ID
+          example: traP
+      required:
+        - id
     Customer:
       description: Customer の情報
       type: object
@@ -403,3 +472,5 @@ tags:
     description: Webhook API
   - name: List
     description: List API
+  - name: Admin
+    description: Admin API
