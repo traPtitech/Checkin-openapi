@@ -380,18 +380,22 @@ components:
                 example: in_1MtHbELkdIwHu7ixl4OzzPMv
               amount_due:
                 type: integer
+                format: int64
                 description: 最終的に支払う金額
                 example: 0
               amount_paid:
                 type: integer
+                format: int64
                 description: 支払い済み金額
                 example: 0
               amount_remaining:
                 type: integer
+                format: int64
                 description: 支払い残高
                 example: 0
               created:
                 type: integer
+                format: int64
                 description: 作成日時 (Unix 時間)
                 example: 1680644467
               customer:
@@ -433,14 +437,17 @@ components:
                 example: cs_test_1234567890
               amount_total:
                 type: integer
+                format: int64
                 description: 支払い金額
                 example: 2198
               amount_subtotal:
                 type: integer
+                format: int64
                 description: 割引・税金を含まない支払い金額
                 example: 1998
               created:
                 type: integer
+                format: int64
                 description: 作成日時 (Unix 時間)
                 example: 1679600215
               customer:
