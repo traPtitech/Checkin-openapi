@@ -73,6 +73,8 @@ paths:
       tags:
         - Customer
       operationId: getCustomer
+      security:
+        - cookieAuth: []
       parameters:
         - $ref: '#/components/parameters/CustomerId'
         - name: traq_id
@@ -101,6 +103,8 @@ paths:
       tags:
         - Customer
       operationId: postCustomer
+      security:
+        - cookieAuth: []
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       requestBody:
@@ -122,6 +126,8 @@ paths:
       tags:
         - Customer
       operationId: patchCustomer
+      security:
+        - cookieAuth: []
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       requestBody:
@@ -144,6 +150,8 @@ paths:
       tags:
         - Invoice
       operationId: postInvoice
+      security:
+        - cookieAuth: []
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       requestBody:
@@ -355,7 +363,7 @@ components:
           description: isct email
           format: email
           maxLength: 255
-          pattern: (?i)^[^@\s]+@isct\.ac\.jp$
+          pattern: ^[^@\s]+@[iI][sS][cC][tT]\.[aA][cC]\.[jJ][pP]$
       required:
         - email
     VerifyEmailStartResponse:
