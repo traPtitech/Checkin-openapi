@@ -16,6 +16,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/labstack/echo/v4"
 	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // Defines values for GetCheckoutSessionsResponseDataStatus.
@@ -186,20 +187,20 @@ type StripeEvent map[string]interface{}
 // VerifyEmailRequest Verify email request
 type VerifyEmailRequest struct {
 	// Email isct email
-	Email string `json:"email"`
+	Email openapi_types.Email `json:"email"`
 }
 
-// VerifyEmailResponse Verify email response
-type VerifyEmailResponse struct {
+// VerifyEmailStartResponse Verify email start response
+type VerifyEmailStartResponse struct {
 	// Email normalized email
 	Email string `json:"email"`
 
 	// Redirect validated redirect path
 	Redirect string `json:"redirect"`
-
-	// Token JWT token
-	Token string `json:"token"`
 }
+
+// CsrfToken defines model for CsrfToken.
+type CsrfToken = string
 
 // CustomerId defines model for CustomerId.
 type CustomerId = string
@@ -226,6 +227,24 @@ type GetCustomerParams struct {
 
 	// Email Email
 	Email *string `form:"email,omitempty" json:"email,omitempty"`
+}
+
+// PatchCustomerParams defines parameters for PatchCustomer.
+type PatchCustomerParams struct {
+	// XCSRFToken Double-submit CSRF token
+	XCSRFToken CsrfToken `json:"X-CSRF-Token"`
+}
+
+// PostCustomerParams defines parameters for PostCustomer.
+type PostCustomerParams struct {
+	// XCSRFToken Double-submit CSRF token
+	XCSRFToken CsrfToken `json:"X-CSRF-Token"`
+}
+
+// PostInvoiceParams defines parameters for PostInvoice.
+type PostInvoiceParams struct {
+	// XCSRFToken Double-submit CSRF token
+	XCSRFToken CsrfToken `json:"X-CSRF-Token"`
 }
 
 // GetCheckoutSessionsParams defines parameters for GetCheckoutSessions.
@@ -291,6 +310,12 @@ type PostVerifyEmailParams struct {
 	Redirect *string `form:"redirect,omitempty" json:"redirect,omitempty"`
 }
 
+// GetVerifyEmailConfirmParams defines parameters for GetVerifyEmailConfirm.
+type GetVerifyEmailConfirmParams struct {
+	// Token 確認メールに含まれるワンタイムトークン
+	Token string `form:"token" json:"token"`
+}
+
 // PostWebhookInvoicePaidParams defines parameters for PostWebhookInvoicePaid.
 type PostWebhookInvoicePaidParams struct {
 	// StripeSignature Stripe が送信する認証情報
@@ -317,27 +342,33 @@ type ServerInterface interface {
 	// 管理者の一覧を取得
 	// (GET /admin)
 	GetAdmins(ctx echo.Context) error
+	// CSRF トークン用 cookie を発行
+	// (GET /csrf)
+	GetCsrf(ctx echo.Context) error
 	// Customer を取得
 	// (GET /customer)
 	GetCustomer(ctx echo.Context, params GetCustomerParams) error
 	// Customer を更新
 	// (PATCH /customer)
-	PatchCustomer(ctx echo.Context) error
+	PatchCustomer(ctx echo.Context, params PatchCustomerParams) error
 	// Customer を作成
 	// (POST /customer)
-	PostCustomer(ctx echo.Context) error
+	PostCustomer(ctx echo.Context, params PostCustomerParams) error
 	// Invoice を作成
 	// (POST /invoice)
-	PostInvoice(ctx echo.Context) error
+	PostInvoice(ctx echo.Context, params PostInvoiceParams) error
 	// オンライン決済ページ由来の入金一覧を取得
 	// (GET /list/checkout-sessions)
 	GetCheckoutSessions(ctx echo.Context, params GetCheckoutSessionsParams) error
 	// 請求書由来の入金一覧を取得
 	// (GET /list/invoices)
 	GetInvoices(ctx echo.Context, params GetInvoicesParams) error
-	// isct メールアドレスを検証して JWT を発行
+	// isct メールアドレスの確認メールを送信
 	// (POST /verify-email)
 	PostVerifyEmail(ctx echo.Context, params PostVerifyEmailParams) error
+	// メール確認トークンを検証してログインを完了
+	// (GET /verify-email/confirm)
+	GetVerifyEmailConfirm(ctx echo.Context, params GetVerifyEmailConfirmParams) error
 	// Webhook の invoice.paid イベントを受け取る
 	// (POST /webhook/invoice-paid)
 	PostWebhookInvoicePaid(ctx echo.Context, params PostWebhookInvoicePaidParams) error
@@ -354,6 +385,15 @@ func (w *ServerInterfaceWrapper) GetAdmins(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.GetAdmins(ctx)
+	return err
+}
+
+// GetCsrf converts echo context to params.
+func (w *ServerInterfaceWrapper) GetCsrf(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetCsrf(ctx)
 	return err
 }
 
@@ -393,8 +433,30 @@ func (w *ServerInterfaceWrapper) GetCustomer(ctx echo.Context) error {
 func (w *ServerInterfaceWrapper) PatchCustomer(ctx echo.Context) error {
 	var err error
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PatchCustomerParams
+
+	headers := ctx.Request().Header
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CsrfToken
+		n := len(valueList)
+		if n != 1 {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Expected one value for X-CSRF-Token, got %d", n))
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter X-CSRF-Token: %s", err))
+		}
+
+		params.XCSRFToken = XCSRFToken
+	} else {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Header parameter X-CSRF-Token is required, but not found"))
+	}
+
 	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.PatchCustomer(ctx)
+	err = w.Handler.PatchCustomer(ctx, params)
 	return err
 }
 
@@ -402,8 +464,30 @@ func (w *ServerInterfaceWrapper) PatchCustomer(ctx echo.Context) error {
 func (w *ServerInterfaceWrapper) PostCustomer(ctx echo.Context) error {
 	var err error
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PostCustomerParams
+
+	headers := ctx.Request().Header
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CsrfToken
+		n := len(valueList)
+		if n != 1 {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Expected one value for X-CSRF-Token, got %d", n))
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter X-CSRF-Token: %s", err))
+		}
+
+		params.XCSRFToken = XCSRFToken
+	} else {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Header parameter X-CSRF-Token is required, but not found"))
+	}
+
 	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.PostCustomer(ctx)
+	err = w.Handler.PostCustomer(ctx, params)
 	return err
 }
 
@@ -411,8 +495,30 @@ func (w *ServerInterfaceWrapper) PostCustomer(ctx echo.Context) error {
 func (w *ServerInterfaceWrapper) PostInvoice(ctx echo.Context) error {
 	var err error
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params PostInvoiceParams
+
+	headers := ctx.Request().Header
+	// ------------- Required header parameter "X-CSRF-Token" -------------
+	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
+		var XCSRFToken CsrfToken
+		n := len(valueList)
+		if n != 1 {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Expected one value for X-CSRF-Token, got %d", n))
+		}
+
+		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true})
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter X-CSRF-Token: %s", err))
+		}
+
+		params.XCSRFToken = XCSRFToken
+	} else {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Header parameter X-CSRF-Token is required, but not found"))
+	}
+
 	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.PostInvoice(ctx)
+	err = w.Handler.PostInvoice(ctx, params)
 	return err
 }
 
@@ -554,6 +660,24 @@ func (w *ServerInterfaceWrapper) PostVerifyEmail(ctx echo.Context) error {
 	return err
 }
 
+// GetVerifyEmailConfirm converts echo context to params.
+func (w *ServerInterfaceWrapper) GetVerifyEmailConfirm(ctx echo.Context) error {
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetVerifyEmailConfirmParams
+	// ------------- Required query parameter "token" -------------
+
+	err = runtime.BindQueryParameter("form", true, true, "token", ctx.QueryParams(), &params.Token)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter token: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetVerifyEmailConfirm(ctx, params)
+	return err
+}
+
 // PostWebhookInvoicePaid converts echo context to params.
 func (w *ServerInterfaceWrapper) PostWebhookInvoicePaid(ctx echo.Context) error {
 	var err error
@@ -614,6 +738,7 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	}
 
 	router.GET(baseURL+"/admin", wrapper.GetAdmins)
+	router.GET(baseURL+"/csrf", wrapper.GetCsrf)
 	router.GET(baseURL+"/customer", wrapper.GetCustomer)
 	router.PATCH(baseURL+"/customer", wrapper.PatchCustomer)
 	router.POST(baseURL+"/customer", wrapper.PostCustomer)
@@ -621,6 +746,7 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.GET(baseURL+"/list/checkout-sessions", wrapper.GetCheckoutSessions)
 	router.GET(baseURL+"/list/invoices", wrapper.GetInvoices)
 	router.POST(baseURL+"/verify-email", wrapper.PostVerifyEmail)
+	router.GET(baseURL+"/verify-email/confirm", wrapper.GetVerifyEmailConfirm)
 	router.POST(baseURL+"/webhook/invoice-paid", wrapper.PostWebhookInvoicePaid)
 
 }
@@ -628,45 +754,51 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
+	"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",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

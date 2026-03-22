@@ -8,7 +8,7 @@ info:
 paths:
   /verify-email:
     post:
-      summary: isct メールアドレスを検証して JWT を発行
+      summary: isct メールアドレスの確認メールを送信
       tags:
         - Auth
       operationId: postVerifyEmail
@@ -25,16 +25,48 @@ paths:
             schema:
               $ref: '#/components/schemas/VerifyEmailRequest'
       responses:
-        '200':
-          description: OK
+        '202':
+          description: Accepted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/VerifyEmailResponse'
+                $ref: '#/components/schemas/VerifyEmailStartResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /verify-email/confirm:
+    get:
+      summary: メール確認トークンを検証してログインを完了
+      tags:
+        - Auth
+      operationId: getVerifyEmailConfirm
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: 確認メールに含まれるワンタイムトークン
+          schema:
+            type: string
+            minLength: 32
+      responses:
+        '303':
+          description: See Other
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          description: Unauthorized
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /csrf:
+    get:
+      summary: CSRF トークン用 cookie を発行
+      tags:
+        - Auth
+      operationId: getCsrf
+      responses:
+        '204':
+          description: No Content
   /customer:
     get:
       summary: Customer を取得
@@ -69,6 +101,8 @@ paths:
       tags:
         - Customer
       operationId: postCustomer
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       requestBody:
         content:
           application/json:
@@ -88,6 +122,8 @@ paths:
       tags:
         - Customer
       operationId: patchCustomer
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       requestBody:
         content:
           application/json:
@@ -108,6 +144,8 @@ paths:
       tags:
         - Invoice
       operationId: postInvoice
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       requestBody:
         content:
           application/json:
@@ -249,6 +287,14 @@ paths:
           $ref: '#/components/responses/InternalServerError'
 components:
   parameters:
+    CsrfToken:
+      name: X-CSRF-Token
+      in: header
+      description: Double-submit CSRF token
+      required: true
+      schema:
+        type: string
+        minLength: 16
     CustomerId:
       name: customer_id
       in: query
@@ -293,32 +339,39 @@ components:
       description: Not found
     InternalServerError:
       description: Internal server error
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: checkin_session
   schemas:
     VerifyEmailRequest:
       description: Verify email request
       type: object
+      additionalProperties: false
       properties:
         email:
           type: string
           description: isct email
+          format: email
+          maxLength: 255
+          pattern: (?i)^[^@\s]+@isct\.ac\.jp$
       required:
         - email
-    VerifyEmailResponse:
-      description: Verify email response
+    VerifyEmailStartResponse:
+      description: Verify email start response
       type: object
+      additionalProperties: false
       properties:
         email:
           type: string
           description: normalized email
-        token:
-          type: string
-          description: JWT token
         redirect:
           type: string
           description: validated redirect path
+          pattern: ^/(|[^/].*)$
       required:
         - email
-        - token
         - redirect
     Admin:
       description: 管理者の情報
