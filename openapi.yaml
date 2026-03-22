@@ -33,7 +33,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
   /verify-email/confirm:
     get:
-      summary: メール確認トークンを検証してログインを完了
+      summary: メール確認トークンの確認ページを表示
       tags:
         - Auth
       operationId: getVerifyEmailConfirm
@@ -46,12 +46,60 @@ paths:
             type: string
             minLength: 32
       responses:
-        '303':
-          description: See Other
+        '200':
+          description: OK
+          headers:
+            Cache-Control:
+              description: ブラウザや中継に保存させない
+              schema:
+                type: string
+                example: no-store
+          content:
+            text/html:
+              schema:
+                type: string
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
-          description: Unauthorized
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      summary: メール確認トークンを消費してログインを完了
+      tags:
+        - Auth
+      operationId: postVerifyEmailConfirm
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailConfirmRequest'
+      responses:
+        '303':
+          description: See Other
+          headers:
+            Location:
+              description: 検証完了後に遷移する相対パス
+              schema:
+                $ref: '#/components/schemas/RelativeRedirectPath'
+            Cache-Control:
+              description: ブラウザや中継に保存させない
+              schema:
+                type: string
+                example: no-store
+            Set-Cookie:
+              description: >
+                `__Host-checkin_session` と `__Host-checkin_csrf` cookie を発行する。
+                `__Host-checkin_csrf` の値は以後の state-changing request で
+                `X-CSRF-Token` header にそのままコピーして送る。
+              schema:
+                type: string
+                example: __Host-checkin_session=session-token; Path=/; HttpOnly; Secure; SameSite=Lax
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /csrf:
@@ -66,11 +114,11 @@ paths:
           headers:
             Set-Cookie:
               description: >
-                `checkin_csrf` cookie を発行する。state-changing request では、この cookie の値を
+                `__Host-checkin_csrf` cookie を発行する。state-changing request では、この cookie の値を
                 `X-CSRF-Token` header にそのままコピーして送る。
               schema:
                 type: string
-                example: checkin_csrf=csrf-token-value; Path=/; SameSite=Lax
+                example: __Host-checkin_csrf=csrf-token-value; Path=/; Secure; SameSite=Lax
   /customer:
     get:
       summary: Customer を取得
@@ -98,6 +146,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Customer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -117,12 +171,24 @@ paths:
             schema:
               $ref: '#/components/schemas/PostCustomerRequest'
       responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
         '201':
           description: Created
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Customer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalServerError'
     patch:
@@ -146,6 +212,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Customer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /invoice:
@@ -170,6 +242,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CreateInvoiceResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /webhook/invoice-paid:
@@ -303,8 +381,8 @@ components:
       name: X-CSRF-Token
       in: header
       description: >
-        Double-submit CSRF token。`/csrf` または `/verify-email/confirm` が発行した
-        `checkin_csrf` cookie の値をそのまま送る。
+        Double-submit CSRF token。`/csrf` または `POST /verify-email/confirm` が発行した
+        `__Host-checkin_csrf` cookie の値をそのまま送る。
       required: true
       schema:
         type: string
@@ -353,6 +431,8 @@ components:
   responses:
     BadRequest:
       description: Bad request
+    Unauthorized:
+      description: Unauthorized
     Forbidden:
       description: Forbidden
     NotFound:
@@ -363,7 +443,7 @@ components:
     cookieAuth:
       type: apiKey
       in: cookie
-      name: checkin_session
+      name: __Host-checkin_session
   schemas:
     RelativeRedirectPath:
       description: "`//` で始まらないアプリ内の相対パス"
@@ -383,6 +463,16 @@ components:
           pattern: ^[^@\s]+@[iI][sS][cC][tT]\.[aA][cC]\.[jJ][pP]$
       required:
         - email
+    VerifyEmailConfirmRequest:
+      description: Verify email confirm request
+      type: object
+      additionalProperties: false
+      properties:
+        token:
+          type: string
+          minLength: 32
+      required:
+        - token
     VerifyEmailStartResponse:
       description: Verify email start response
       type: object
