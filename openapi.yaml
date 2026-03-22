@@ -122,11 +122,10 @@ paths:
   /customer:
     get:
       summary: Customer を取得
+      description: session cookie または信頼済み proxy auth が必要
       tags:
         - Customer
       operationId: getCustomer
-      security:
-        - cookieAuth: []
       parameters:
         - $ref: '#/components/parameters/CustomerId'
         - name: traq_id
@@ -158,11 +157,10 @@ paths:
           $ref: '#/components/responses/InternalServerError'
     post:
       summary: Customer を作成
+      description: session cookie または信頼済み proxy auth が必要。`X-CSRF-Token` も必須
       tags:
         - Customer
       operationId: postCustomer
-      security:
-        - cookieAuth: []
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       requestBody:
@@ -193,11 +191,10 @@ paths:
           $ref: '#/components/responses/InternalServerError'
     patch:
       summary: Customer を更新
+      description: session cookie または信頼済み proxy auth が必要。`X-CSRF-Token` も必須
       tags:
         - Customer
       operationId: patchCustomer
-      security:
-        - cookieAuth: []
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       requestBody:
@@ -223,11 +220,10 @@ paths:
   /invoice:
     post:
       summary: Invoice を作成
+      description: session cookie または信頼済み proxy auth が必要。`X-CSRF-Token` も必須
       tags:
         - Invoice
       operationId: postInvoice
-      security:
-        - cookieAuth: []
       parameters:
         - $ref: '#/components/parameters/CsrfToken'
       requestBody:
@@ -439,11 +435,6 @@ components:
       description: Not found
     InternalServerError:
       description: Internal server error
-  securitySchemes:
-    cookieAuth:
-      type: apiKey
-      in: cookie
-      name: __Host-checkin_session
   schemas:
     RelativeRedirectPath:
       description: "`//` で始まらないアプリ内の相対パス"
