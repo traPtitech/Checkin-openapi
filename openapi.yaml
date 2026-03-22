@@ -13,11 +13,7 @@ paths:
         - Auth
       operationId: postVerifyEmail
       parameters:
-        - name: redirect
-          in: query
-          description: 検証後に遷移する相対パス
-          schema:
-            type: string
+        - $ref: '#/components/parameters/VerifyEmailRedirect'
       requestBody:
         required: true
         content:
@@ -67,6 +63,14 @@ paths:
       responses:
         '204':
           description: No Content
+          headers:
+            Set-Cookie:
+              description: >
+                `checkin_csrf` cookie を発行する。state-changing request では、この cookie の値を
+                `X-CSRF-Token` header にそのままコピーして送る。
+              schema:
+                type: string
+                example: checkin_csrf=csrf-token-value; Path=/; SameSite=Lax
   /customer:
     get:
       summary: Customer を取得
@@ -298,11 +302,19 @@ components:
     CsrfToken:
       name: X-CSRF-Token
       in: header
-      description: Double-submit CSRF token
+      description: >
+        Double-submit CSRF token。`/csrf` または `/verify-email/confirm` が発行した
+        `checkin_csrf` cookie の値をそのまま送る。
       required: true
       schema:
         type: string
         minLength: 16
+    VerifyEmailRedirect:
+      name: redirect
+      in: query
+      description: 検証後に遷移する相対パス
+      schema:
+        $ref: '#/components/schemas/RelativeRedirectPath'
     CustomerId:
       name: customer_id
       in: query
@@ -353,6 +365,11 @@ components:
       in: cookie
       name: checkin_session
   schemas:
+    RelativeRedirectPath:
+      description: "`//` で始まらないアプリ内の相対パス"
+      type: string
+      pattern: ^/(|[^/].*)$
+      example: /membership
     VerifyEmailRequest:
       description: Verify email request
       type: object
@@ -375,9 +392,8 @@ components:
           type: string
           description: normalized email
         redirect:
-          type: string
           description: validated redirect path
-          pattern: ^/(|[^/].*)$
+          $ref: '#/components/schemas/RelativeRedirectPath'
       required:
         - email
         - redirect
