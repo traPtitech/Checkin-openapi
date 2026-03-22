@@ -6,6 +6,35 @@ info:
   description: Checkin API
 
 paths:
+  /verify-email:
+    post:
+      summary: isct メールアドレスを検証して JWT を発行
+      tags:
+        - Auth
+      operationId: postVerifyEmail
+      parameters:
+        - name: redirect
+          in: query
+          description: 検証後に遷移する相対パス
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyEmailResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
   /customer:
     get:
       summary: Customer を取得
@@ -90,7 +119,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Invoice'
+                $ref: '#/components/schemas/CreateInvoiceResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /webhook/invoice-paid:
@@ -107,15 +136,16 @@ paths:
           schema:
             type: string
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Invoice'
+              $ref: '#/components/schemas/StripeEvent'
       responses:
         '204':
           description: No content
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /list/invoices:
@@ -217,47 +247,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalServerError'
-    post:
-      summary: 管理者を作成
-      tags:
-        - Admin
-      operationId: postAdmin
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Admin'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Admin'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-    delete:
-      summary: 管理者を削除
-      tags:
-        - Admin
-      operationId: deleteAdmin
-      parameters:
-        - name: id
-          in: query
-          description: 管理者の traQ ID
-          required: true
-          schema:
-            type: string
-      responses:
-        '204':
-          description: No content
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
 components:
   parameters:
     CustomerId:
@@ -296,6 +285,8 @@ components:
       schema:
         type: string
   responses:
+    BadRequest:
+      description: Bad request
     Forbidden:
       description: Forbidden
     NotFound:
@@ -303,6 +294,32 @@ components:
     InternalServerError:
       description: Internal server error
   schemas:
+    VerifyEmailRequest:
+      description: Verify email request
+      type: object
+      properties:
+        email:
+          type: string
+          description: isct email
+      required:
+        - email
+    VerifyEmailResponse:
+      description: Verify email response
+      type: object
+      properties:
+        email:
+          type: string
+          description: normalized email
+        token:
+          type: string
+          description: JWT token
+        redirect:
+          type: string
+          description: validated redirect path
+      required:
+        - email
+        - token
+        - redirect
     Admin:
       description: 管理者の情報
       type: object
@@ -362,6 +379,21 @@ components:
       required:
         - customer_id
         - product_id
+    CreateInvoiceResponse:
+      description: Invoice creation result
+      type: object
+      properties:
+        invoice_id:
+          type: string
+          description: Invoice ID
+          example: in_1MtHbELkdIwHu7ixl4OzzPMv
+        payment_url:
+          type: string
+          description: Hosted invoice payment URL
+          example: https://invoice.stripe.com/...
+      required:
+        - invoice_id
+        - payment_url
     Invoice:
       description: Invoice の情報
       type: object
@@ -380,18 +412,22 @@ components:
                 example: in_1MtHbELkdIwHu7ixl4OzzPMv
               amount_due:
                 type: integer
+                format: int64
                 description: 最終的に支払う金額
                 example: 0
               amount_paid:
                 type: integer
+                format: int64
                 description: 支払い済み金額
                 example: 0
               amount_remaining:
                 type: integer
+                format: int64
                 description: 支払い残高
                 example: 0
               created:
                 type: integer
+                format: int64
                 description: 作成日時 (Unix 時間)
                 example: 1680644467
               customer:
@@ -433,14 +469,17 @@ components:
                 example: cs_test_1234567890
               amount_total:
                 type: integer
+                format: int64
                 description: 支払い金額
                 example: 2198
               amount_subtotal:
                 type: integer
+                format: int64
                 description: 割引・税金を含まない支払い金額
                 example: 1998
               created:
                 type: integer
+                format: int64
                 description: 作成日時 (Unix 時間)
                 example: 1679600215
               customer:
@@ -462,8 +501,14 @@ components:
                 type: string
                 description: Product ID
                 example: prod_NWjs8kKbJWmuuc
+    StripeEvent:
+      description: Generic Stripe event payload
+      type: object
+      additionalProperties: true
 
 tags:
+  - name: Auth
+    description: Auth API
   - name: Customer
     description: Customer API
   - name: Invoice
