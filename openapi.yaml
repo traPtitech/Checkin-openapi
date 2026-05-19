@@ -6,9 +6,123 @@ info:
   description: Checkin API
 
 paths:
+  /verify-email:
+    post:
+      summary: isct メールアドレスの確認メールを送信
+      tags:
+        - Auth
+      operationId: postVerifyEmail
+      parameters:
+        - $ref: '#/components/parameters/VerifyEmailRedirect'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailRequest'
+      responses:
+        '202':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerifyEmailStartResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /verify-email/confirm:
+    get:
+      summary: メール確認トークンの確認ページを表示
+      tags:
+        - Auth
+      operationId: getVerifyEmailConfirm
+      parameters:
+        - name: token
+          in: query
+          required: true
+          description: 確認メールに含まれるワンタイムトークン
+          schema:
+            type: string
+            minLength: 32
+      responses:
+        '200':
+          description: OK
+          headers:
+            Cache-Control:
+              description: ブラウザや中継に保存させない
+              schema:
+                type: string
+                example: no-store
+          content:
+            text/html:
+              schema:
+                type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      summary: メール確認トークンを消費してログインを完了
+      tags:
+        - Auth
+      operationId: postVerifyEmailConfirm
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VerifyEmailConfirmRequest'
+      responses:
+        '303':
+          description: See Other
+          headers:
+            Location:
+              description: 検証完了後に遷移する相対パス
+              schema:
+                $ref: '#/components/schemas/RelativeRedirectPath'
+            Cache-Control:
+              description: ブラウザや中継に保存させない
+              schema:
+                type: string
+                example: no-store
+            Set-Cookie:
+              description: >
+                `__Host-checkin_session` と `__Host-checkin_csrf` cookie を発行する。
+                `__Host-checkin_csrf` の値は以後の state-changing request で
+                `X-CSRF-Token` header にそのままコピーして送る。
+              schema:
+                type: string
+                example: __Host-checkin_session=session-token; Path=/; HttpOnly; Secure; SameSite=Lax
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /csrf:
+    get:
+      summary: CSRF トークン用 cookie を発行
+      tags:
+        - Auth
+      operationId: getCsrf
+      responses:
+        '204':
+          description: No Content
+          headers:
+            Set-Cookie:
+              description: >
+                `__Host-checkin_csrf` cookie を発行する。state-changing request では、この cookie の値を
+                `X-CSRF-Token` header にそのままコピーして送る。
+              schema:
+                type: string
+                example: __Host-checkin_csrf=csrf-token-value; Path=/; Secure; SameSite=Lax
   /customer:
     get:
       summary: Customer を取得
+      description: session cookie または信頼済み proxy auth が必要
       tags:
         - Customer
       operationId: getCustomer
@@ -31,34 +145,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Customer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
     post:
       summary: Customer を作成
+      description: session cookie または信頼済み proxy auth が必要。`X-CSRF-Token` も必須
       tags:
         - Customer
       operationId: postCustomer
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PostCustomerRequest'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Customer'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-    patch:
-      summary: Customer を更新
-      tags:
-        - Customer
-      operationId: patchCustomer
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       requestBody:
         content:
           application/json:
@@ -71,14 +175,57 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Customer'
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      summary: Customer を更新
+      description: session cookie または信頼済み proxy auth が必要。`X-CSRF-Token` も必須
+      tags:
+        - Customer
+      operationId: patchCustomer
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostCustomerRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /invoice:
     post:
       summary: Invoice を作成
+      description: session cookie または信頼済み proxy auth が必要。`X-CSRF-Token` も必須
       tags:
         - Invoice
       operationId: postInvoice
+      parameters:
+        - $ref: '#/components/parameters/CsrfToken'
       requestBody:
         content:
           application/json:
@@ -90,7 +237,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Invoice'
+                $ref: '#/components/schemas/CreateInvoiceResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /webhook/invoice-paid:
@@ -107,15 +260,16 @@ paths:
           schema:
             type: string
       requestBody:
+        required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Invoice'
+              $ref: '#/components/schemas/StripeEvent'
       responses:
         '204':
           description: No content
-        '403':
-          $ref: '#/components/responses/Forbidden'
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalServerError'
   /list/invoices:
@@ -217,49 +371,24 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalServerError'
-    post:
-      summary: 管理者を作成
-      tags:
-        - Admin
-      operationId: postAdmin
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Admin'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Admin'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-    delete:
-      summary: 管理者を削除
-      tags:
-        - Admin
-      operationId: deleteAdmin
-      parameters:
-        - name: id
-          in: query
-          description: 管理者の traQ ID
-          required: true
-          schema:
-            type: string
-      responses:
-        '204':
-          description: No content
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
 components:
   parameters:
+    CsrfToken:
+      name: X-CSRF-Token
+      in: header
+      description: >
+        Double-submit CSRF token。`/csrf` または `POST /verify-email/confirm` が発行した
+        `__Host-checkin_csrf` cookie の値をそのまま送る。
+      required: true
+      schema:
+        type: string
+        minLength: 16
+    VerifyEmailRedirect:
+      name: redirect
+      in: query
+      description: 検証後に遷移する相対パス
+      schema:
+        $ref: '#/components/schemas/RelativeRedirectPath'
     CustomerId:
       name: customer_id
       in: query
@@ -296,6 +425,10 @@ components:
       schema:
         type: string
   responses:
+    BadRequest:
+      description: Bad request
+    Unauthorized:
+      description: Unauthorized
     Forbidden:
       description: Forbidden
     NotFound:
@@ -303,6 +436,48 @@ components:
     InternalServerError:
       description: Internal server error
   schemas:
+    RelativeRedirectPath:
+      description: "`//` で始まらないアプリ内の相対パス"
+      type: string
+      pattern: ^/(|[^/].*)$
+      example: /membership
+    VerifyEmailRequest:
+      description: Verify email request
+      type: object
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+          description: isct email
+          format: email
+          maxLength: 255
+          pattern: ^[^@\s]+@[iI][sS][cC][tT]\.[aA][cC]\.[jJ][pP]$
+      required:
+        - email
+    VerifyEmailConfirmRequest:
+      description: Verify email confirm request
+      type: object
+      additionalProperties: false
+      properties:
+        token:
+          type: string
+          minLength: 32
+      required:
+        - token
+    VerifyEmailStartResponse:
+      description: Verify email start response
+      type: object
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+          description: normalized email
+        redirect:
+          description: validated redirect path
+          $ref: '#/components/schemas/RelativeRedirectPath'
+      required:
+        - email
+        - redirect
     Admin:
       description: 管理者の情報
       type: object
@@ -362,6 +537,21 @@ components:
       required:
         - customer_id
         - product_id
+    CreateInvoiceResponse:
+      description: Invoice creation result
+      type: object
+      properties:
+        invoice_id:
+          type: string
+          description: Invoice ID
+          example: in_1MtHbELkdIwHu7ixl4OzzPMv
+        payment_url:
+          type: string
+          description: Hosted invoice payment URL
+          example: https://invoice.stripe.com/...
+      required:
+        - invoice_id
+        - payment_url
     Invoice:
       description: Invoice の情報
       type: object
@@ -380,18 +570,22 @@ components:
                 example: in_1MtHbELkdIwHu7ixl4OzzPMv
               amount_due:
                 type: integer
+                format: int64
                 description: 最終的に支払う金額
                 example: 0
               amount_paid:
                 type: integer
+                format: int64
                 description: 支払い済み金額
                 example: 0
               amount_remaining:
                 type: integer
+                format: int64
                 description: 支払い残高
                 example: 0
               created:
                 type: integer
+                format: int64
                 description: 作成日時 (Unix 時間)
                 example: 1680644467
               customer:
@@ -433,14 +627,17 @@ components:
                 example: cs_test_1234567890
               amount_total:
                 type: integer
+                format: int64
                 description: 支払い金額
                 example: 2198
               amount_subtotal:
                 type: integer
+                format: int64
                 description: 割引・税金を含まない支払い金額
                 example: 1998
               created:
                 type: integer
+                format: int64
                 description: 作成日時 (Unix 時間)
                 example: 1679600215
               customer:
@@ -462,8 +659,14 @@ components:
                 type: string
                 description: Product ID
                 example: prod_NWjs8kKbJWmuuc
+    StripeEvent:
+      description: Generic Stripe event payload
+      type: object
+      additionalProperties: true
 
 tags:
+  - name: Auth
+    description: Auth API
   - name: Customer
     description: Customer API
   - name: Invoice
