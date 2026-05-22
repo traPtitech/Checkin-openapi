@@ -233,13 +233,7 @@ paths:
           description: 請求書ステータス
           in: query
           schema:
-            type: string
-            enum:
-              - draft
-              - open
-              - paid
-              - uncollectible
-              - void
+            $ref: '#/components/schemas/InvoiceStatus'
         - name: collection_method
           description: 請求書の支払い方法
           in: query
@@ -536,6 +530,16 @@ components:
       required:
         - customer_id
         - product_id
+    InvoiceStatus:
+      description: 請求書ステータス
+      type: string
+      enum:
+        - draft
+        - open
+        - paid
+        - uncollectible
+        - void
+      example: draft
     PostInvoiceResponse:
       description: Invoice creation result
       type: object
@@ -590,15 +594,7 @@ components:
               customer:
                 $ref: '#/components/schemas/Customer'
               status:
-                type: string
-                description: 請求書ステータス
-                enum:
-                  - draft
-                  - open
-                  - paid
-                  - uncollectible
-                  - void
-                example: draft
+                $ref: '#/components/schemas/InvoiceStatus'
               payment_intent:
                 type:
                   - string
