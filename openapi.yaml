@@ -217,7 +217,48 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /invoice:
+  /invoices:
+    get:
+      summary: 請求書由来の入金一覧を取得
+      tags:
+        - Invoice
+      operationId: getInvoices
+      parameters:
+        - $ref: '#/components/parameters/CustomerId'
+        - $ref: '#/components/parameters/SubscriptionId'
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/StartingAfter'
+        - $ref: '#/components/parameters/EndingBefore'
+        - name: status
+          description: 請求書ステータス
+          in: query
+          schema:
+            type: string
+            enum:
+              - draft
+              - open
+              - paid
+              - uncollectible
+              - void
+        - name: collection_method
+          description: 請求書の支払い方法
+          in: query
+          schema:
+            type: string
+            enum:
+              - charge_automatically
+              - send_invoice
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Invoice'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
     post:
       summary: Invoice を作成
       description: session cookie または信頼済み proxy auth が必要。`X-CSRF-Token` も必須
@@ -270,48 +311,6 @@ paths:
           description: No content
         '400':
           $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-  /list/invoices:
-    get:
-      summary: 請求書由来の入金一覧を取得
-      tags:
-        - List
-      operationId: getInvoices
-      parameters:
-        - $ref: '#/components/parameters/CustomerId'
-        - $ref: '#/components/parameters/SubscriptionId'
-        - $ref: '#/components/parameters/Limit'
-        - $ref: '#/components/parameters/StartingAfter'
-        - $ref: '#/components/parameters/EndingBefore'
-        - name: status
-          description: 請求書ステータス
-          in: query
-          schema:
-            type: string
-            enum:
-              - draft
-              - open
-              - paid
-              - uncollectible
-              - void
-        - name: collection_method
-          description: 請求書の支払い方法
-          in: query
-          schema:
-            type: string
-            enum:
-              - charge_automatically
-              - send_invoice
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Invoice'
-        '403':
-          $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalServerError'
 
