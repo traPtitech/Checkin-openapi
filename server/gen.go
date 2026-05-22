@@ -35,6 +35,13 @@ const (
 	InvoiceDataStatusVoid          InvoiceDataStatus = "void"
 )
 
+// Defines values for GetCheckoutSessionsParamsStatus.
+const (
+	GetCheckoutSessionsParamsStatusComplete GetCheckoutSessionsParamsStatus = "complete"
+	GetCheckoutSessionsParamsStatusExpired  GetCheckoutSessionsParamsStatus = "expired"
+	GetCheckoutSessionsParamsStatusOpen     GetCheckoutSessionsParamsStatus = "open"
+)
+
 // Defines values for GetInvoicesParamsStatus.
 const (
 	GetInvoicesParamsStatusDraft         GetInvoicesParamsStatus = "draft"
@@ -48,13 +55,6 @@ const (
 const (
 	ChargeAutomatically GetInvoicesParamsCollectionMethod = "charge_automatically"
 	SendInvoice         GetInvoicesParamsCollectionMethod = "send_invoice"
-)
-
-// Defines values for GetCheckoutSessionsParamsStatus.
-const (
-	GetCheckoutSessionsParamsStatusComplete GetCheckoutSessionsParamsStatus = "complete"
-	GetCheckoutSessionsParamsStatusExpired  GetCheckoutSessionsParamsStatus = "expired"
-	GetCheckoutSessionsParamsStatusOpen     GetCheckoutSessionsParamsStatus = "open"
 )
 
 // Admin 管理者の情報
@@ -228,6 +228,33 @@ type SubscriptionId = string
 // VerifyEmailRedirect `//` で始まらないアプリ内の相対パス
 type VerifyEmailRedirect = RelativeRedirectPath
 
+// GetCheckoutSessionsParams defines parameters for GetCheckoutSessions.
+type GetCheckoutSessionsParams struct {
+	// CustomerId Customer ID
+	CustomerId *CustomerId `form:"customer_id,omitempty" json:"customer_id,omitempty"`
+
+	// SubscriptionId Subscription ID
+	SubscriptionId *SubscriptionId `form:"subscription_id,omitempty" json:"subscription_id,omitempty"`
+
+	// Limit 取得件数
+	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
+
+	// StartingAfter 指定された ID のオブジェクト以降のオブジェクトを取得
+	StartingAfter *StartingAfter `form:"starting_after,omitempty" json:"starting_after,omitempty"`
+
+	// EndingBefore 指定された ID のオブジェクト以前のオブジェクトを取得
+	EndingBefore *EndingBefore `form:"ending_before,omitempty" json:"ending_before,omitempty"`
+
+	// PaymentIntentId PaymentIntent ID
+	PaymentIntentId *string `form:"payment_intent_id,omitempty" json:"payment_intent_id,omitempty"`
+
+	// Status Checkout Session のステータス
+	Status *GetCheckoutSessionsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
+}
+
+// GetCheckoutSessionsParamsStatus defines parameters for GetCheckoutSessions.
+type GetCheckoutSessionsParamsStatus string
+
 // GetCustomerParams defines parameters for GetCustomer.
 type GetCustomerParams struct {
 	// CustomerId Customer ID
@@ -288,33 +315,6 @@ type PostInvoiceParams struct {
 	XCSRFToken CsrfToken `json:"X-CSRF-Token"`
 }
 
-// GetCheckoutSessionsParams defines parameters for GetCheckoutSessions.
-type GetCheckoutSessionsParams struct {
-	// CustomerId Customer ID
-	CustomerId *CustomerId `form:"customer_id,omitempty" json:"customer_id,omitempty"`
-
-	// SubscriptionId Subscription ID
-	SubscriptionId *SubscriptionId `form:"subscription_id,omitempty" json:"subscription_id,omitempty"`
-
-	// Limit 取得件数
-	Limit *Limit `form:"limit,omitempty" json:"limit,omitempty"`
-
-	// StartingAfter 指定された ID のオブジェクト以降のオブジェクトを取得
-	StartingAfter *StartingAfter `form:"starting_after,omitempty" json:"starting_after,omitempty"`
-
-	// EndingBefore 指定された ID のオブジェクト以前のオブジェクトを取得
-	EndingBefore *EndingBefore `form:"ending_before,omitempty" json:"ending_before,omitempty"`
-
-	// PaymentIntentId PaymentIntent ID
-	PaymentIntentId *string `form:"payment_intent_id,omitempty" json:"payment_intent_id,omitempty"`
-
-	// Status Checkout Session のステータス
-	Status *GetCheckoutSessionsParamsStatus `form:"status,omitempty" json:"status,omitempty"`
-}
-
-// GetCheckoutSessionsParamsStatus defines parameters for GetCheckoutSessions.
-type GetCheckoutSessionsParamsStatus string
-
 // PostVerifyEmailParams defines parameters for PostVerifyEmail.
 type PostVerifyEmailParams struct {
 	// Redirect 検証後に遷移する相対パス
@@ -356,6 +356,9 @@ type ServerInterface interface {
 	// 管理者の一覧を取得
 	// (GET /admin)
 	GetAdmins(ctx echo.Context) error
+	// オンライン決済ページ由来の入金一覧を取得
+	// (GET /checkout/sessions)
+	GetCheckoutSessions(ctx echo.Context, params GetCheckoutSessionsParams) error
 	// CSRF トークン用 cookie を発行
 	// (GET /csrf)
 	GetCsrf(ctx echo.Context) error
@@ -374,9 +377,6 @@ type ServerInterface interface {
 	// Invoice を作成
 	// (POST /invoices)
 	PostInvoice(ctx echo.Context, params PostInvoiceParams) error
-	// オンライン決済ページ由来の入金一覧を取得
-	// (GET /list/checkout-sessions)
-	GetCheckoutSessions(ctx echo.Context, params GetCheckoutSessionsParams) error
 	// isct メールアドレスの確認メールを送信
 	// (POST /verify-email)
 	PostVerifyEmail(ctx echo.Context, params PostVerifyEmailParams) error
@@ -402,6 +402,66 @@ func (w *ServerInterfaceWrapper) GetAdmins(ctx echo.Context) error {
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.GetAdmins(ctx)
+	return err
+}
+
+// GetCheckoutSessions converts echo context to params.
+func (w *ServerInterfaceWrapper) GetCheckoutSessions(ctx echo.Context) error {
+	var err error
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetCheckoutSessionsParams
+	// ------------- Optional query parameter "customer_id" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "customer_id", ctx.QueryParams(), &params.CustomerId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter customer_id: %s", err))
+	}
+
+	// ------------- Optional query parameter "subscription_id" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "subscription_id", ctx.QueryParams(), &params.SubscriptionId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter subscription_id: %s", err))
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", ctx.QueryParams(), &params.Limit)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter limit: %s", err))
+	}
+
+	// ------------- Optional query parameter "starting_after" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "starting_after", ctx.QueryParams(), &params.StartingAfter)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter starting_after: %s", err))
+	}
+
+	// ------------- Optional query parameter "ending_before" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "ending_before", ctx.QueryParams(), &params.EndingBefore)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter ending_before: %s", err))
+	}
+
+	// ------------- Optional query parameter "payment_intent_id" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "payment_intent_id", ctx.QueryParams(), &params.PaymentIntentId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter payment_intent_id: %s", err))
+	}
+
+	// ------------- Optional query parameter "status" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "status", ctx.QueryParams(), &params.Status)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter status: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.GetCheckoutSessions(ctx, params)
 	return err
 }
 
@@ -599,66 +659,6 @@ func (w *ServerInterfaceWrapper) PostInvoice(ctx echo.Context) error {
 	return err
 }
 
-// GetCheckoutSessions converts echo context to params.
-func (w *ServerInterfaceWrapper) GetCheckoutSessions(ctx echo.Context) error {
-	var err error
-
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GetCheckoutSessionsParams
-	// ------------- Optional query parameter "customer_id" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "customer_id", ctx.QueryParams(), &params.CustomerId)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter customer_id: %s", err))
-	}
-
-	// ------------- Optional query parameter "subscription_id" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "subscription_id", ctx.QueryParams(), &params.SubscriptionId)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter subscription_id: %s", err))
-	}
-
-	// ------------- Optional query parameter "limit" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "limit", ctx.QueryParams(), &params.Limit)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter limit: %s", err))
-	}
-
-	// ------------- Optional query parameter "starting_after" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "starting_after", ctx.QueryParams(), &params.StartingAfter)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter starting_after: %s", err))
-	}
-
-	// ------------- Optional query parameter "ending_before" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "ending_before", ctx.QueryParams(), &params.EndingBefore)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter ending_before: %s", err))
-	}
-
-	// ------------- Optional query parameter "payment_intent_id" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "payment_intent_id", ctx.QueryParams(), &params.PaymentIntentId)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter payment_intent_id: %s", err))
-	}
-
-	// ------------- Optional query parameter "status" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "status", ctx.QueryParams(), &params.Status)
-	if err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter status: %s", err))
-	}
-
-	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.GetCheckoutSessions(ctx, params)
-	return err
-}
-
 // PostVerifyEmail converts echo context to params.
 func (w *ServerInterfaceWrapper) PostVerifyEmail(ctx echo.Context) error {
 	var err error
@@ -764,13 +764,13 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	}
 
 	router.GET(baseURL+"/admin", wrapper.GetAdmins)
+	router.GET(baseURL+"/checkout/sessions", wrapper.GetCheckoutSessions)
 	router.GET(baseURL+"/csrf", wrapper.GetCsrf)
 	router.GET(baseURL+"/customers", wrapper.GetCustomer)
 	router.PATCH(baseURL+"/customers", wrapper.PatchCustomer)
 	router.POST(baseURL+"/customers", wrapper.PostCustomer)
 	router.GET(baseURL+"/invoices", wrapper.GetInvoices)
 	router.POST(baseURL+"/invoices", wrapper.PostInvoice)
-	router.GET(baseURL+"/list/checkout-sessions", wrapper.GetCheckoutSessions)
 	router.POST(baseURL+"/verify-email", wrapper.PostVerifyEmail)
 	router.GET(baseURL+"/verify-email/confirm", wrapper.GetVerifyEmailConfirm)
 	router.POST(baseURL+"/verify-email/confirm", wrapper.PostVerifyEmailConfirm)
@@ -781,61 +781,61 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/+xb+1fbRvb/V3T07Q/td20MhLzoyTlNaNrQ0oSFdtuzxDVjaYyVWBpnNOKRLucgOQ9y",
-	"INsmTUhp2tPQzYMNLTTNbpaGbPhjBhv4L/bMSLIla2TMI2lO218SLN2ZuXPncx9z79VnsoL0IjKgQUy5",
-	"8zO5CDDQIYGY/+oyce5DdBYa7IcKTQVrRaIhQ+6U30ZWtgCTppXVNSJ19fe9IxFGSSecwZRi4tygRO3n",
-	"1P6O2kvSYO+p/g+l1DDEWm4sCXWgFVIKMnIa1hnZ9Prs0425aWrfovZ30mAmcwKZJKnkoXJWMzLuZApC",
-	"ZzUoUXuxPHGXOtep/S21F/kSzzcnbOpM0QnntCEnZI2xl4dAhVhOyAbQodwpf5JkLCbdzSRkDM9ZGoaq",
-	"3EmwBROyqeShDtgudc3ogcYQycudbQcSMhkrsuEmwZoxJI+PJ+QuyyRIh7hbjQrFfyd1v+0zcs6CeKzG",
-	"h+JRZDRVDi4LR4FeLHgUmZPwryPqSdJz/NQn1vAxWcTGcUPVjKFjMIcwjDJSmb5cXvya2jepM81k2v02",
-	"kxx1HtLSDHWWqfOAOku0NLm2cq985arwFXWulz+fKT+/FbMTyBnIZF0OgnuJMtuj6RqJcunOv7bypHLz",
-	"p5hVCnxkcHYV5oBVIHJnW2tC1sGopls6+8F+aYb3qyoxzSBwCGLORT8BmGjG0NEcgXhXMtuc3ZnMTI+D",
-	"DOAsNBZav5WtsicCW/B9PODMAFU86Ewr2wzo/sIV+DjT3z6oahgqglOt3P1mY/5Z+fk0tRc27f+sP1ih",
-	"9ix1ptZvL5eXntPSNer8EsMs9icNcvkahjm5U/6/VM1Spdy3ZqoPFgDRhqHPTS8geXmcsYqhWUSGCbkd",
-	"OwbUPnjOgqaA3WNAlbD3cjwhv4NwVlNVkcmrvRpPyN0GgdgAhX6IhyE+jjESQMonkkxOJUFONp6QTyLy",
-	"DrIMwameRETK8VfjCfkjA1gkj7B2HgpIQ2/Znj2pMMqjqq4JtrC+OLf+xaWNiYvUXqyULpbvPJITchGj",
-	"IsREc2WlCVYiGPzZhVgNMgSDXiFIarZ1gE2WrtKg7Bl2tsyGYggI7DaGkabAPu+kROLjBJLCyBnKMTSZ",
-	"6kdYdukyItb9Oeq414xM2wfkRPZ4z1m1e+SEdVAbLXScOn++94Ph6KYSchGM6dAgGQsXokswbwVVyeNC",
-	"8milj/p6QkvmCSmanamUR9fCZi/CFgXpqZaWlq1FWdtkmB+hgD0308BFxSOA++foSK72oR2dgYYxhpEJ",
-	"jbe8h2w3IvlpWzrL7TlA32JEtIc9DU72HmNR6mM8imYhGJzL7BrxEfG/C0kXi16QRfqhaWrIMONRzt3I",
-	"Y1r6J3Xu0tLjyqOnleVJWvqalp5RZ3n9xqPKt/dY2HPx3ubla2vLExv3H0SOTAWE20qNQN2N40KvgY4s",
-	"g2RMK0sQAYKzLV/5ufzsJi2trM//ffPyNebHvljgwdVDal+o3FiqXLlJ7Qubl69tzl0NCqXt8OFDCTmH",
-	"sA6I624PdMhR75vwWYhZv8EK7W1NrsCthMhOrv33m8rkF5Vb9yqzjvT6R4Y2KlVmnc2ZL98I7eTAwcMH",
-	"Wlvb2/Y3t1pAwxp5qKomxmmBhxPJA0pEG8wMgSbJtLXv69h/4OChw62N7BNj0BA4OWp/Se1FKbIYc9Ez",
-	"329O/GNt5StqX6POFS/46XUn7HbnCzJU1DL7PiAjx0ZqlrP9ENhHzvUCIWcYqZZChErW676r3zIbkjn5",
-	"8Rnz0Nn3s+99rFuWIprZJIBYZhMS5aHaL7R0iWvUqht+QIMFigP8+lOAxLUaRW5sEzIqQoPZ1RpP/ElT",
-	"uu89ABiDMfY7D8yMLg7Sf5hjrPmaTu1pajvsImNP1ZbKIlSAwBCv5Tm3eK8Xb+SbsxiqJeL7m4n1fzvr",
-	"X1+g9oKvuJeiitu6HbtQBCKAVM0Cs4j26i7XwMyxGezgGiy0OLW58NX2l9i18TnUeqCjo+PAwZdqfPY2",
-	"OGpsfDYWpiqPnMrt5d+izaltLtbQqBjkiG9bmNB4IGcZCioUoEK0bIHZoGHkhsw1zvxxr5jp6UUm8eEV",
-	"e7eqhniuFtDSQ3ZPdua5lCa3G3huLwbcSazXOAKHHh982XSMTKqXmhiR+CrXnESC6aItAuida0HjXYcz",
-	"VoFJRRIQ3scjqw+mUoMStR+UH0yxGNO54oaZ1Pmelm7R0sPyJXY/rcsX1DQipUM9C7GZ14pckQi7ZMud",
-	"8qep1/828Gkq3fL/b7wmEkg/v3AdH/aMFFBVjTEECr0Bmbv5wDC/70IDYk2R3AkkyGZg17wCAqoskEIg",
-	"TdLlZjkDcBAvmwMFM7KuO4/EcSd5+dJqrqIeKsTP0wYymPvatzpdd1S68Sb2gPs4rmNUXjMVIvn6VnWI",
-	"/gMdjPo7bN+/PwSBgU/fOn3aTP/prQGtOz1g9qcHlK70APkwffp0ywA4yn+yP8+8lx4o9qZfa1LptxAQ",
-	"zywGb3g7FRNPEEp+7qpZaRlMQAXtPFSrMouAHwfydTvIqIktYXXSqHzYEM3IoZj4XDOko73djFGNcKUO",
-	"Px2G2HSpW1vaWlrZBpjfBEVN7pT38Uf82PNcLCngZ7uGIN8gkxnw86bsNs7TYaZclxZsb23lRhZVAxdQ",
-	"LBY0hQ9NnTERn7OWiazGyo0E6GbeIt6YySMsh1PvM6qO1n1xM1Z5TYUyj/tdrhuPEKUneYrQ0nWAx+pS",
-	"gW5WIZi9JmDIZCft7ibNhvKqTiMhd7H3ERF3iHKcUhfyozy3UsOJ+yFJdvE6j8BnNKwKOdf9EtKsWwli",
-	"gRpMKnlgDGnGkG9+mNOh9hKdsL0LcX1VSRoMFooGJZc5dk0O1puo85iWbrDQyb5F7fvh8pMovS7g/Qj7",
-	"J8nNb3IYFCz4psRU7UjqTakfKhaGb0r9QIf9GoFHesCowE6Nh8+Tl+BoaZJHdEu09Hj9xnxEPsGTtUje",
-	"P1jPxZuB0w1L3/Su0lV5eZW9tdW5zTvP3NuZVMRodEwCFslL1J4ur17cuG+7AW8dTvxbSSJUbhwQY7pG",
-	"kgqU3sYT8VGcqLLgB38NSy5xgaew/OW9i58uvUtr09zFLt6uNGElAnURPqRt6yHhosNO7FeHaxIaj6gW",
-	"SPbO4NUy3wI7VxVoml9oiZLfQyWgE06dXaGOU169uHlnMqIfvWztnWtItWDvwo+f7TGkju0Z8kT3vvFo",
-	"xe0PsO+psw5it3L7X5WZn2Kxi0zya0E3AI0/kNsccttdGL7w1bq8/OTvTVncNItYWVjo41VVzUZxbbdP",
-	"s8t4ZQvqun6PJka4bTXNTB3qfGliQKi7KBoYNUh3xrS9EMsMx8Y7yopuGbEFksyLtZz+zC+VxzfjGrK8",
-	"hZCR0SHJI1XIppIHeAhmgEWQDoimgEKBzWFCQ814EBLx9yJDQL/28+rdLKuHIKxdi6Ivfy+vgAPzWXk1",
-	"/VdddlnovvbQoQjbdH7n3qVaWhU4lxqOmW8paCZJKV41OukhuKGnqW8a+cPjVAsWwdpg/DU/XIrc9oW/",
-	"udaBbbq4hh0GL9NjNOpKevW8yA7aokSupUcziaePwfZz3vHgeZqoEwik9retgqIe2RflEgQ1mvFwrp5g",
-	"C0ZdRPuL4CBcBBEA6qiiwOLO3cQe4YqXlmhpjuGotMBrjldo6Qem5vbi+vdPNx5eDby9vjlhr63OifOm",
-	"ou8ZGpn3aF0wiq66ft06fuwFry/PmabOFC0tMRVhdukuLd0JJn/j0qDb+f5BVD3c2j4ROEpSeaIXwiCK",
-	"ZK8F5iZUDOgCSh4mu5BBMBLUvGhphtuG+9R5Qp0La8s/rj+ZpfbC2uq35R+/ovZNat92y8oxOXkDJU3i",
-	"froQzay/vDhmr6ylDxEfMTUoBGDtt3s41zfm5tfvPo3COtGcVazBtzmzNpocGRlJ5hDWkxYuQENBqtss",
-	"tW0rU1dQb8Lc7XM9WN3HExBKp0ieJ6peDdAl5B7kSiv2k4rF6bWnl7b8sGJXX04ktlWE82LaQYna89I2",
-	"K3Qx9F4pzl5aW7nHt7ooxdfyXk65ztvlEe9/t2hXK9edIKR4yiiMbaNw95syL871ypPJjZ9XXOnS0o/U",
-	"+cmN2Vg8xjErdp8jMJtH6Kyfg0v6PaDxFuhjd4R3zeoF3rcQDRyo17JD7WnXkbvw23h4dWP+WbUzVvjF",
-	"oDsy2a8NGYBYXGXjvabQTe59vBfsYGoq0BMX331eftU4zDtLpvD+pzMtDAESx84sj/3dD+puUfta+fMZ",
-	"6kwFcOQNZ1Aarz6t3ysDm9dR4p0qh5/g4uenjEPEgfbZuDa+EH01JRch9zcbIve3ECVnl5YwLb/GRAl5",
-	"e0bdDt3+k/T4/wIAAP//6uVYYts7AAA=",
+	"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",
+	"NyU9/r8AAAD//0t6G1X3OwAA",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
