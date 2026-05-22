@@ -201,7 +201,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PostCustomerRequest'
+              $ref: '#/components/schemas/PatchCustomerRequest'
       responses:
         '200':
           description: OK
@@ -517,6 +517,19 @@ components:
       required:
         - email
         - name
+    PatchCustomerRequest:
+      description: Customer 更新リクエスト (すべてのフィールドはオプショナル)
+      type: object
+      properties:
+        email:
+          type: string
+          description: Email
+        name:
+          type: string
+          description: Name
+        traq_id:
+          type: string
+          description: traQ ID
     PostInvoiceRequest:
       description: Invoice 作成リクエスト
       type: object
