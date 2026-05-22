@@ -314,11 +314,11 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /list/checkout-sessions:
+  /checkout/sessions:
     get:
       summary: オンライン決済ページ由来の入金一覧を取得
       tags:
-        - List
+        - CheckoutSession
       operationId: getCheckoutSessions
       parameters:
         - $ref: '#/components/parameters/CustomerId'
@@ -672,7 +672,7 @@ tags:
     description: Invoice API
   - name: Webhook
     description: Webhook API
-  - name: List
-    description: List API
+  - name: CheckoutSession
+    description: CheckoutSession API
   - name: Admin
     description: Admin API
