@@ -19,14 +19,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/VerifyEmailRequest'
+              $ref: '#/components/schemas/PostVerifyEmailRequest'
       responses:
         '202':
           description: Accepted
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/VerifyEmailStartResponse'
+                $ref: '#/components/schemas/PostVerifyEmailResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -74,7 +74,7 @@ paths:
         content:
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/VerifyEmailConfirmRequest'
+              $ref: '#/components/schemas/PostVerifyEmailConfirmRequest'
       responses:
         '303':
           description: See Other
@@ -278,7 +278,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CreateInvoiceResponse'
+                $ref: '#/components/schemas/PostInvoiceResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -440,7 +440,7 @@ components:
       type: string
       pattern: ^/(|[^/].*)$
       example: /membership
-    VerifyEmailRequest:
+    PostVerifyEmailRequest:
       description: Verify email request
       type: object
       additionalProperties: false
@@ -453,7 +453,7 @@ components:
           pattern: ^[^@\s]+@[iI][sS][cC][tT]\.[aA][cC]\.[jJ][pP]$
       required:
         - email
-    VerifyEmailConfirmRequest:
+    PostVerifyEmailConfirmRequest:
       description: Verify email confirm request
       type: object
       additionalProperties: false
@@ -463,7 +463,7 @@ components:
           minLength: 32
       required:
         - token
-    VerifyEmailStartResponse:
+    PostVerifyEmailResponse:
       description: Verify email start response
       type: object
       additionalProperties: false
@@ -536,7 +536,7 @@ components:
       required:
         - customer_id
         - product_id
-    CreateInvoiceResponse:
+    PostInvoiceResponse:
       description: Invoice creation result
       type: object
       properties:
