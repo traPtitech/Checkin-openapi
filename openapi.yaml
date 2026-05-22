@@ -119,7 +119,7 @@ paths:
               schema:
                 type: string
                 example: __Host-checkin_csrf=csrf-token-value; Path=/; Secure; SameSite=Lax
-  /customer:
+  /customers:
     get:
       summary: Customer を取得
       description: session cookie または信頼済み proxy auth が必要
