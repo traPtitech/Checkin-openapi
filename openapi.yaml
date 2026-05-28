@@ -129,100 +129,7 @@ paths:
               schema:
                 type: string
                 example: __Host-checkin_csrf=csrf-token-value; Path=/; Secure; SameSite=Lax
-  /customers:
-    get:
-      summary: Customer を取得
-      tags:
-        - Customer
-      operationId: getCustomer
-      security:
-        - EmailVerifiedSession: []
-        - NeoShowcaseAuth: []
-      parameters:
-        - $ref: '#/components/parameters/CustomerId'
-        - name: traq_id
-          description: traQ ID
-          in: query
-          schema:
-            type: string
-        - name: email
-          description: Email
-          in: query
-          schema:
-            type: string
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Customer'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-    post:
-      summary: Customer を作成
-      tags:
-        - Customer
-      operationId: postCustomer
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PostCustomerRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Customer'
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Customer'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-    patch:
-      summary: Customer を更新
-      tags:
-        - Customer
-      operationId: patchCustomer
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchCustomerRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Customer'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+
   /invoices:
     get:
       summary: 請求書由来の入金一覧を取得
@@ -391,6 +298,76 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MeResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+  /me/customer:
+    get:
+      summary: ログインユーザーの顧客情報を取得
+      tags:
+        - User
+      operationId: getMeCustomer
+      security:
+        - EmailVerifiedSession: []
+        - NewShowcaseAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    post:
+      summary: ログインユーザーの顧客情報を作成
+      tags:
+        - User
+      operationId: postMeCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostCustomerRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+    patch:
+      summary: ログインユーザーの顧客情報を更新
+      tags:
+        - User
+      operationId: patchMeCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchCustomerRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Customer'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
 components:
@@ -745,8 +722,6 @@ tags:
     description: Auth API
   - name: User
     description: User API
-  - name: Customer
-    description: Customer API
   - name: Invoice
     description: Invoice API
   - name: Webhook
