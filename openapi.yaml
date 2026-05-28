@@ -377,6 +377,22 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /me:
+    get:
+      summary: ログインユーザーのセッション情報を取得
+      tags:
+        - User
+      operationId: getMe
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 components:
   securitySchemes:
     EmailVerifiedSession:
@@ -692,10 +708,43 @@ components:
       description: Generic Stripe event payload
       type: object
       additionalProperties: true
+    MeResponse:
+      description: |
+        現在のセッション情報（ログインユーザー情報）
+        
+        【設計注記】
+        OpenAPI 3.1.0 の標準仕様としては `nullable: true` は非推奨であり、本来は `type: [string, "null"]` と定義すべきです。
+        しかし、Goの自動生成ツールである `oapi-codegen` (v2.7.x 時点) が OpenAPI 3.1.0 の Union型（型配列）のパースに対応しておらず、
+        ビルドエラー (`unhandled Schema type: &[string null]`) になるため、本プロジェクトでは意図的に `nullable: true` を使用しています。
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          nullable: true
+          description: メールアドレス認証が完了しているセッションの場合にメールアドレスが入る。それ以外は null。
+        traq_id:
+          type: string
+          nullable: true
+          description: NeoShowcaseプロキシ認証を経由しているセッションの場合に traQ ID が入る。それ以外は null。
+        is_admin:
+          type: boolean
+          description: 現在のユーザーがシステム管理者権限を持っている場合のみ true。それ以外は false。
+        customer_id:
+          type: string
+          nullable: true
+          description: 現在のセッションのユーザーがすでに Stripe Customer として登録されている場合に顧客IDが入る。未登録の場合は null。
+      required:
+        - email
+        - traq_id
+        - is_admin
+        - customer_id
 
 tags:
   - name: Auth
     description: Auth API
+  - name: User
+    description: User API
   - name: Customer
     description: Customer API
   - name: Invoice
