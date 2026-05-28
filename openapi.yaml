@@ -169,31 +169,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalServerError'
-    post:
-      summary: Invoice を作成
-      tags:
-        - Invoice
-      operationId: postInvoice
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PostInvoiceRequest'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PostInvoiceResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
+
   /webhook/invoice-paid:
     post:
       summary: Webhook の invoice.paid イベントを受け取る
@@ -370,6 +346,33 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /me/invoices:
+    post:
+      summary: 現在の認証セッションに関連付けられた請求書を作成
+      tags:
+        - User
+      operationId: postMeInvoice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostInvoiceRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostInvoiceResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 components:
   securitySchemes:
     EmailVerifiedSession:
@@ -539,14 +542,18 @@ components:
       type: object
       additionalProperties: false
       properties:
-        customer_id:
-          type: string
-          description: Customer ID
         product_id:
           type: string
-          description: Product ID
+          description: 商品ID (Product ID)
+        metadata:
+          type: object
+          description: 請求書に付与するメタデータ
+          additionalProperties: false
+          properties:
+            traq_id:
+              type: string
+              description: 再入部等でアカウント復旧の対象となる traQ ID
       required:
-        - customer_id
         - product_id
     InvoiceStatus:
       description: 請求書ステータス
