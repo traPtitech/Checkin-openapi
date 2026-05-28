@@ -357,14 +357,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/PostInvoiceRequest'
+              $ref: '#/components/schemas/PostMeInvoiceRequest'
       responses:
         '201':
           description: Created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PostInvoiceResponse'
+                $ref: '#/components/schemas/PostMeInvoiceResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -537,7 +537,7 @@ components:
         name:
           type: string
           description: 氏名
-    PostInvoiceRequest:
+    PostMeInvoiceRequest:
       description: Invoice 作成リクエスト
       type: object
       additionalProperties: false
@@ -565,7 +565,7 @@ components:
         - uncollectible
         - void
       example: draft
-    PostInvoiceResponse:
+    PostMeInvoiceResponse:
       description: Invoice creation result
       type: object
       properties:
