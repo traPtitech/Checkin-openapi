@@ -726,7 +726,7 @@ components:
         traq_id:
           type: string
           nullable: true
-          description: NewShowcaseプロキシ認証を経由しているセッションの場合に traQ ID が入る。それ以外は null。
+          description: NeoShowcaseプロキシ認証を経由しているセッションの場合に traQ ID が入る。それ以外は null。
         is_admin:
           type: boolean
           description: 現在のユーザーがシステム管理者権限を持っている場合のみ true。それ以外は false。
