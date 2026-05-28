@@ -133,11 +133,11 @@ paths:
   /invoices:
     get:
       summary: 請求書由来の入金一覧を取得
+      description: "請求書情報の閲覧権限を持つユーザーのみアクセス可能です。一般ユーザーの場合は 403 Forbidden を返します。"
       tags:
         - Invoice
       operationId: getInvoices
       security:
-        - EmailVerifiedSession: []
         - NeoShowcaseAuth: []
       parameters:
         - $ref: '#/components/parameters/CustomerId'
@@ -225,11 +225,11 @@ paths:
   /checkout/sessions:
     get:
       summary: オンライン決済ページ由来の入金一覧を取得
+      description: "決済情報の閲覧権限を持つユーザーのみアクセス可能です。一般ユーザーの場合は 403 Forbidden を返します。"
       tags:
         - CheckoutSession
       operationId: getCheckoutSessions
       security:
-        - EmailVerifiedSession: []
         - NeoShowcaseAuth: []
       parameters:
         - $ref: '#/components/parameters/CustomerId'
@@ -265,11 +265,11 @@ paths:
   /admin:
     get:
       summary: 管理者の一覧を取得
+      description: "管理者リストの閲覧権限を持つユーザーのみアクセス可能です。一般ユーザーの場合は 403 Forbidden を返します。"
       tags:
         - Admin
       operationId: getAdmins
       security:
-        - EmailVerifiedSession: []
         - NeoShowcaseAuth: []
       responses:
         '200':
