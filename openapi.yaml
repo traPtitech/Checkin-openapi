@@ -709,7 +709,13 @@ components:
       type: object
       additionalProperties: true
     MeResponse:
-      description: 現在のセッション情報（ログインユーザー情報）
+      description: |
+        現在のセッション情報（ログインユーザー情報）
+        
+        【設計注記】
+        OpenAPI 3.1.0 の標準仕様としては `nullable: true` は非推奨であり、本来は `type: [string, "null"]` と定義すべきです。
+        しかし、Goの自動生成ツールである `oapi-codegen` (v2.7.x 時点) が OpenAPI 3.1.0 の Union型（型配列）のパースに対応しておらず、
+        ビルドエラー (`unhandled Schema type: &[string null]`) になるため、本プロジェクトでは意図的に `nullable: true` を使用しています。
       type: object
       properties:
         email:
