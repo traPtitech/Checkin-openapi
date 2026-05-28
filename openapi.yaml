@@ -5,10 +5,17 @@ info:
   version: 0.1.0
   description: Checkin API
 
+security:
+  - EmailVerifiedSession: []
+    CsrfTokenHeader: []
+  - NeoShowcaseAuth: []
+    CsrfTokenHeader: []
+
 paths:
   /verify-email:
     post:
       summary: isct メールアドレスの確認メールを送信
+      security: []
       tags:
         - Auth
       operationId: postVerifyEmail
@@ -34,6 +41,7 @@ paths:
   /verify-email/confirm:
     get:
       summary: メール確認トークンの確認ページを表示
+      security: []
       tags:
         - Auth
       operationId: getVerifyEmailConfirm
@@ -66,6 +74,7 @@ paths:
           $ref: '#/components/responses/InternalServerError'
     post:
       summary: メール確認トークンを消費してログインを完了
+      security: []
       tags:
         - Auth
       operationId: postVerifyEmailConfirm
@@ -90,12 +99,12 @@ paths:
                 example: no-store
             Set-Cookie:
               description: >
-                `__Host-checkin_session` と `__Host-checkin_csrf` cookie を発行する。
+                `__Host-checkin_email_verified_session` と `__Host-checkin_csrf` cookie を発行する。
                 `__Host-checkin_csrf` の値は以後の state-changing request で
                 `X-CSRF-Token` header にそのままコピーして送る。
               schema:
                 type: string
-                example: __Host-checkin_session=session-token; Path=/; HttpOnly; Secure; SameSite=Lax
+                example: __Host-checkin_email_verified_session=session-token; Path=/; HttpOnly; Secure; SameSite=Lax
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -105,6 +114,7 @@ paths:
   /csrf:
     get:
       summary: CSRF トークン用 cookie を発行
+      security: []
       tags:
         - Auth
       operationId: getCsrf
@@ -122,10 +132,12 @@ paths:
   /customers:
     get:
       summary: Customer を取得
-      description: session cookie または信頼済み proxy auth が必要
       tags:
         - Customer
       operationId: getCustomer
+      security:
+        - EmailVerifiedSession: []
+        - NeoShowcaseAuth: []
       parameters:
         - $ref: '#/components/parameters/CustomerId'
         - name: traq_id
@@ -157,12 +169,9 @@ paths:
           $ref: '#/components/responses/InternalServerError'
     post:
       summary: Customer を作成
-      description: session cookie または信頼済み proxy auth が必要。`X-CSRF-Token` も必須
       tags:
         - Customer
       operationId: postCustomer
-      parameters:
-        - $ref: '#/components/parameters/CsrfToken'
       requestBody:
         content:
           application/json:
@@ -191,12 +200,9 @@ paths:
           $ref: '#/components/responses/InternalServerError'
     patch:
       summary: Customer を更新
-      description: session cookie または信頼済み proxy auth が必要。`X-CSRF-Token` も必須
       tags:
         - Customer
       operationId: patchCustomer
-      parameters:
-        - $ref: '#/components/parameters/CsrfToken'
       requestBody:
         content:
           application/json:
@@ -223,6 +229,9 @@ paths:
       tags:
         - Invoice
       operationId: getInvoices
+      security:
+        - EmailVerifiedSession: []
+        - NeoShowcaseAuth: []
       parameters:
         - $ref: '#/components/parameters/CustomerId'
         - $ref: '#/components/parameters/SubscriptionId'
@@ -255,12 +264,9 @@ paths:
           $ref: '#/components/responses/InternalServerError'
     post:
       summary: Invoice を作成
-      description: session cookie または信頼済み proxy auth が必要。`X-CSRF-Token` も必須
       tags:
         - Invoice
       operationId: postInvoice
-      parameters:
-        - $ref: '#/components/parameters/CsrfToken'
       requestBody:
         content:
           application/json:
@@ -284,6 +290,7 @@ paths:
   /webhook/invoice-paid:
     post:
       summary: Webhook の invoice.paid イベントを受け取る
+      security: []
       tags:
         - Webhook
       operationId: postWebhookInvoicePaid
@@ -314,6 +321,9 @@ paths:
       tags:
         - CheckoutSession
       operationId: getCheckoutSessions
+      security:
+        - EmailVerifiedSession: []
+        - NeoShowcaseAuth: []
       parameters:
         - $ref: '#/components/parameters/CustomerId'
         - $ref: '#/components/parameters/SubscriptionId'
@@ -351,6 +361,9 @@ paths:
       tags:
         - Admin
       operationId: getAdmins
+      security:
+        - EmailVerifiedSession: []
+        - NeoShowcaseAuth: []
       responses:
         '200':
           description: OK
@@ -365,17 +378,25 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 components:
-  parameters:
-    CsrfToken:
-      name: X-CSRF-Token
+  securitySchemes:
+    EmailVerifiedSession:
+      type: apiKey
+      in: cookie
+      name: __Host-checkin_email_verified_session
+      description: メールアドレスの所有権確認によって確立される一時的なセッションCookie
+    NeoShowcaseAuth:
+      type: apiKey
       in: header
+      name: X-Forwarded-User
+      description: NeoShowcaseプロキシ環境下で自動付与される信頼済みユーザー認証
+    CsrfTokenHeader:
+      type: apiKey
+      in: header
+      name: X-CSRF-Token
       description: >
-        Double-submit CSRF token。`/csrf` または `POST /verify-email/confirm` が発行した
-        `__Host-checkin_csrf` cookie の値をそのまま送る。
-      required: true
-      schema:
-        type: string
-        minLength: 16
+        Double-submit CSRF対策用ヘッダー。
+        `/csrf` または `POST /verify-email/confirm` が発行した `__Host-checkin_csrf` cookie の値をそのまま送る。
+  parameters:
     VerifyEmailRedirect:
       name: redirect
       in: query

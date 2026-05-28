@@ -19,6 +19,12 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+const (
+	CsrfTokenHeaderScopes      = "CsrfTokenHeader.Scopes"
+	EmailVerifiedSessionScopes = "EmailVerifiedSession.Scopes"
+	NeoShowcaseAuthScopes      = "NeoShowcaseAuth.Scopes"
+)
+
 // Defines values for GetCheckoutSessionsResponseDataStatus.
 const (
 	GetCheckoutSessionsResponseDataStatusComplete GetCheckoutSessionsResponseDataStatus = "complete"
@@ -210,9 +216,6 @@ type RelativeRedirectPath = string
 // StripeEvent Generic Stripe event payload
 type StripeEvent map[string]interface{}
 
-// CsrfToken defines model for CsrfToken.
-type CsrfToken = string
-
 // CustomerId defines model for CustomerId.
 type CustomerId = string
 
@@ -270,18 +273,6 @@ type GetCustomerParams struct {
 	Email *string `form:"email,omitempty" json:"email,omitempty"`
 }
 
-// PatchCustomerParams defines parameters for PatchCustomer.
-type PatchCustomerParams struct {
-	// XCSRFToken Double-submit CSRF token。`/csrf` または `POST /verify-email/confirm` が発行した `__Host-checkin_csrf` cookie の値をそのまま送る。
-	XCSRFToken CsrfToken `json:"X-CSRF-Token"`
-}
-
-// PostCustomerParams defines parameters for PostCustomer.
-type PostCustomerParams struct {
-	// XCSRFToken Double-submit CSRF token。`/csrf` または `POST /verify-email/confirm` が発行した `__Host-checkin_csrf` cookie の値をそのまま送る。
-	XCSRFToken CsrfToken `json:"X-CSRF-Token"`
-}
-
 // GetInvoicesParams defines parameters for GetInvoices.
 type GetInvoicesParams struct {
 	// CustomerId Customer ID
@@ -308,12 +299,6 @@ type GetInvoicesParams struct {
 
 // GetInvoicesParamsCollectionMethod defines parameters for GetInvoices.
 type GetInvoicesParamsCollectionMethod string
-
-// PostInvoiceParams defines parameters for PostInvoice.
-type PostInvoiceParams struct {
-	// XCSRFToken Double-submit CSRF token。`/csrf` または `POST /verify-email/confirm` が発行した `__Host-checkin_csrf` cookie の値をそのまま送る。
-	XCSRFToken CsrfToken `json:"X-CSRF-Token"`
-}
 
 // PostVerifyEmailParams defines parameters for PostVerifyEmail.
 type PostVerifyEmailParams struct {
@@ -367,16 +352,16 @@ type ServerInterface interface {
 	GetCustomer(ctx echo.Context, params GetCustomerParams) error
 	// Customer を更新
 	// (PATCH /customers)
-	PatchCustomer(ctx echo.Context, params PatchCustomerParams) error
+	PatchCustomer(ctx echo.Context) error
 	// Customer を作成
 	// (POST /customers)
-	PostCustomer(ctx echo.Context, params PostCustomerParams) error
+	PostCustomer(ctx echo.Context) error
 	// 請求書由来の入金一覧を取得
 	// (GET /invoices)
 	GetInvoices(ctx echo.Context, params GetInvoicesParams) error
 	// Invoice を作成
 	// (POST /invoices)
-	PostInvoice(ctx echo.Context, params PostInvoiceParams) error
+	PostInvoice(ctx echo.Context) error
 	// isct メールアドレスの確認メールを送信
 	// (POST /verify-email)
 	PostVerifyEmail(ctx echo.Context, params PostVerifyEmailParams) error
@@ -400,6 +385,10 @@ type ServerInterfaceWrapper struct {
 func (w *ServerInterfaceWrapper) GetAdmins(ctx echo.Context) error {
 	var err error
 
+	ctx.Set(EmailVerifiedSessionScopes, []string{})
+
+	ctx.Set(NeoShowcaseAuthScopes, []string{})
+
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.GetAdmins(ctx)
 	return err
@@ -408,6 +397,10 @@ func (w *ServerInterfaceWrapper) GetAdmins(ctx echo.Context) error {
 // GetCheckoutSessions converts echo context to params.
 func (w *ServerInterfaceWrapper) GetCheckoutSessions(ctx echo.Context) error {
 	var err error
+
+	ctx.Set(EmailVerifiedSessionScopes, []string{})
+
+	ctx.Set(NeoShowcaseAuthScopes, []string{})
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetCheckoutSessionsParams
@@ -478,6 +471,10 @@ func (w *ServerInterfaceWrapper) GetCsrf(ctx echo.Context) error {
 func (w *ServerInterfaceWrapper) GetCustomer(ctx echo.Context) error {
 	var err error
 
+	ctx.Set(EmailVerifiedSessionScopes, []string{})
+
+	ctx.Set(NeoShowcaseAuthScopes, []string{})
+
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetCustomerParams
 	// ------------- Optional query parameter "customer_id" -------------
@@ -510,30 +507,16 @@ func (w *ServerInterfaceWrapper) GetCustomer(ctx echo.Context) error {
 func (w *ServerInterfaceWrapper) PatchCustomer(ctx echo.Context) error {
 	var err error
 
-	// Parameter object where we will unmarshal all parameters from the context
-	var params PatchCustomerParams
+	ctx.Set(CsrfTokenHeaderScopes, []string{})
 
-	headers := ctx.Request().Header
-	// ------------- Required header parameter "X-CSRF-Token" -------------
-	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
-		var XCSRFToken CsrfToken
-		n := len(valueList)
-		if n != 1 {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Expected one value for X-CSRF-Token, got %d", n))
-		}
+	ctx.Set(EmailVerifiedSessionScopes, []string{})
 
-		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter X-CSRF-Token: %s", err))
-		}
+	ctx.Set(CsrfTokenHeaderScopes, []string{})
 
-		params.XCSRFToken = XCSRFToken
-	} else {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Header parameter X-CSRF-Token is required, but not found"))
-	}
+	ctx.Set(NeoShowcaseAuthScopes, []string{})
 
 	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.PatchCustomer(ctx, params)
+	err = w.Handler.PatchCustomer(ctx)
 	return err
 }
 
@@ -541,36 +524,26 @@ func (w *ServerInterfaceWrapper) PatchCustomer(ctx echo.Context) error {
 func (w *ServerInterfaceWrapper) PostCustomer(ctx echo.Context) error {
 	var err error
 
-	// Parameter object where we will unmarshal all parameters from the context
-	var params PostCustomerParams
+	ctx.Set(CsrfTokenHeaderScopes, []string{})
 
-	headers := ctx.Request().Header
-	// ------------- Required header parameter "X-CSRF-Token" -------------
-	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
-		var XCSRFToken CsrfToken
-		n := len(valueList)
-		if n != 1 {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Expected one value for X-CSRF-Token, got %d", n))
-		}
+	ctx.Set(EmailVerifiedSessionScopes, []string{})
 
-		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter X-CSRF-Token: %s", err))
-		}
+	ctx.Set(CsrfTokenHeaderScopes, []string{})
 
-		params.XCSRFToken = XCSRFToken
-	} else {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Header parameter X-CSRF-Token is required, but not found"))
-	}
+	ctx.Set(NeoShowcaseAuthScopes, []string{})
 
 	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.PostCustomer(ctx, params)
+	err = w.Handler.PostCustomer(ctx)
 	return err
 }
 
 // GetInvoices converts echo context to params.
 func (w *ServerInterfaceWrapper) GetInvoices(ctx echo.Context) error {
 	var err error
+
+	ctx.Set(EmailVerifiedSessionScopes, []string{})
+
+	ctx.Set(NeoShowcaseAuthScopes, []string{})
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetInvoicesParams
@@ -632,30 +605,16 @@ func (w *ServerInterfaceWrapper) GetInvoices(ctx echo.Context) error {
 func (w *ServerInterfaceWrapper) PostInvoice(ctx echo.Context) error {
 	var err error
 
-	// Parameter object where we will unmarshal all parameters from the context
-	var params PostInvoiceParams
+	ctx.Set(CsrfTokenHeaderScopes, []string{})
 
-	headers := ctx.Request().Header
-	// ------------- Required header parameter "X-CSRF-Token" -------------
-	if valueList, found := headers[http.CanonicalHeaderKey("X-CSRF-Token")]; found {
-		var XCSRFToken CsrfToken
-		n := len(valueList)
-		if n != 1 {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Expected one value for X-CSRF-Token, got %d", n))
-		}
+	ctx.Set(EmailVerifiedSessionScopes, []string{})
 
-		err = runtime.BindStyledParameterWithOptions("simple", "X-CSRF-Token", valueList[0], &XCSRFToken, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: true})
-		if err != nil {
-			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter X-CSRF-Token: %s", err))
-		}
+	ctx.Set(CsrfTokenHeaderScopes, []string{})
 
-		params.XCSRFToken = XCSRFToken
-	} else {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Header parameter X-CSRF-Token is required, but not found"))
-	}
+	ctx.Set(NeoShowcaseAuthScopes, []string{})
 
 	// Invoke the callback with all the unmarshaled arguments
-	err = w.Handler.PostInvoice(ctx, params)
+	err = w.Handler.PostInvoice(ctx)
 	return err
 }
 
@@ -781,62 +740,65 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"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",
-	"mdH/BgAA///Xkwgqaj0AAA==",
+	"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",
+	"mD4AAA==",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file
