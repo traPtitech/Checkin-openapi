@@ -8,7 +8,7 @@ info:
 security:
   - EmailVerifiedSession: []
     CsrfTokenHeader: []
-  - NewShowcaseAuth: []
+  - NeoShowcaseAuth: []
     CsrfTokenHeader: []
 
 paths:
@@ -137,7 +137,7 @@ paths:
       operationId: getCustomer
       security:
         - EmailVerifiedSession: []
-        - NewShowcaseAuth: []
+        - NeoShowcaseAuth: []
       parameters:
         - $ref: '#/components/parameters/CustomerId'
         - name: traq_id
@@ -231,7 +231,7 @@ paths:
       operationId: getInvoices
       security:
         - EmailVerifiedSession: []
-        - NewShowcaseAuth: []
+        - NeoShowcaseAuth: []
       parameters:
         - $ref: '#/components/parameters/CustomerId'
         - $ref: '#/components/parameters/SubscriptionId'
@@ -323,7 +323,7 @@ paths:
       operationId: getCheckoutSessions
       security:
         - EmailVerifiedSession: []
-        - NewShowcaseAuth: []
+        - NeoShowcaseAuth: []
       parameters:
         - $ref: '#/components/parameters/CustomerId'
         - $ref: '#/components/parameters/SubscriptionId'
@@ -363,7 +363,7 @@ paths:
       operationId: getAdmins
       security:
         - EmailVerifiedSession: []
-        - NewShowcaseAuth: []
+        - NeoShowcaseAuth: []
       responses:
         '200':
           description: OK
@@ -384,11 +384,11 @@ components:
       in: cookie
       name: __Host-checkin_email_verified_session
       description: メールアドレスの所有権確認によって確立される一時的なセッションCookie
-    NewShowcaseAuth:
+    NeoShowcaseAuth:
       type: apiKey
       in: header
       name: X-Forwarded-User
-      description: NewShowcaseプロキシ環境下で自動付与される信頼済みユーザー認証
+      description: NeoShowcaseプロキシ環境下で自動付与される信頼済みユーザー認証
     CsrfTokenHeader:
       type: apiKey
       in: header

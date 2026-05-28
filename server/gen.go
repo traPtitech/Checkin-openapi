@@ -22,7 +22,7 @@ import (
 const (
 	CsrfTokenHeaderScopes      = "CsrfTokenHeader.Scopes"
 	EmailVerifiedSessionScopes = "EmailVerifiedSession.Scopes"
-	NewShowcaseAuthScopes      = "NewShowcaseAuth.Scopes"
+	NeoShowcaseAuthScopes      = "NeoShowcaseAuth.Scopes"
 )
 
 // Defines values for GetCheckoutSessionsResponseDataStatus.
@@ -387,7 +387,7 @@ func (w *ServerInterfaceWrapper) GetAdmins(ctx echo.Context) error {
 
 	ctx.Set(EmailVerifiedSessionScopes, []string{})
 
-	ctx.Set(NewShowcaseAuthScopes, []string{})
+	ctx.Set(NeoShowcaseAuthScopes, []string{})
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.GetAdmins(ctx)
@@ -400,7 +400,7 @@ func (w *ServerInterfaceWrapper) GetCheckoutSessions(ctx echo.Context) error {
 
 	ctx.Set(EmailVerifiedSessionScopes, []string{})
 
-	ctx.Set(NewShowcaseAuthScopes, []string{})
+	ctx.Set(NeoShowcaseAuthScopes, []string{})
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetCheckoutSessionsParams
@@ -473,7 +473,7 @@ func (w *ServerInterfaceWrapper) GetCustomer(ctx echo.Context) error {
 
 	ctx.Set(EmailVerifiedSessionScopes, []string{})
 
-	ctx.Set(NewShowcaseAuthScopes, []string{})
+	ctx.Set(NeoShowcaseAuthScopes, []string{})
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetCustomerParams
@@ -513,7 +513,7 @@ func (w *ServerInterfaceWrapper) PatchCustomer(ctx echo.Context) error {
 
 	ctx.Set(CsrfTokenHeaderScopes, []string{})
 
-	ctx.Set(NewShowcaseAuthScopes, []string{})
+	ctx.Set(NeoShowcaseAuthScopes, []string{})
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.PatchCustomer(ctx)
@@ -530,7 +530,7 @@ func (w *ServerInterfaceWrapper) PostCustomer(ctx echo.Context) error {
 
 	ctx.Set(CsrfTokenHeaderScopes, []string{})
 
-	ctx.Set(NewShowcaseAuthScopes, []string{})
+	ctx.Set(NeoShowcaseAuthScopes, []string{})
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.PostCustomer(ctx)
@@ -543,7 +543,7 @@ func (w *ServerInterfaceWrapper) GetInvoices(ctx echo.Context) error {
 
 	ctx.Set(EmailVerifiedSessionScopes, []string{})
 
-	ctx.Set(NewShowcaseAuthScopes, []string{})
+	ctx.Set(NeoShowcaseAuthScopes, []string{})
 
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetInvoicesParams
@@ -611,7 +611,7 @@ func (w *ServerInterfaceWrapper) PostInvoice(ctx echo.Context) error {
 
 	ctx.Set(CsrfTokenHeaderScopes, []string{})
 
-	ctx.Set(NewShowcaseAuthScopes, []string{})
+	ctx.Set(NeoShowcaseAuthScopes, []string{})
 
 	// Invoke the callback with all the unmarshaled arguments
 	err = w.Handler.PostInvoice(ctx)
@@ -774,30 +774,30 @@ var swaggerSpec = []string{
 	"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",
-	"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",
+	"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",
 	"mD4AAA==",
 }
 
