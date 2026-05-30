@@ -169,6 +169,36 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalServerError'
+    post:
+      summary: 管理者権限で任意の顧客に対する請求書を作成
+      description: "請求書情報の作成権限を持つ管理者のみアクセス可能です。一般ユーザーの場合は 403 Forbidden を返します。"
+      tags:
+        - Invoice
+      operationId: postAdminInvoice
+      security:
+        - NeoShowcaseAuth: []
+        - CsrfTokenHeader: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PostAdminInvoiceRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostInvoiceResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
 
   /webhook/invoice-paid:
     post:
@@ -364,7 +394,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PostMeInvoiceResponse'
+                $ref: '#/components/schemas/PostInvoiceResponse'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -636,6 +666,25 @@ components:
               description: 再入部等でアカウント復旧の対象となる traQ ID
       required:
         - product_id
+    PostAdminInvoiceRequest:
+      description: 管理者権限での請求書作成リクエスト
+      type: object
+      additionalProperties: false
+      properties:
+        customer_id:
+          type: string
+          description: 請求対象の顧客ID (Stripe Customer ID)
+        product_id:
+          type: string
+          description: 請求する商品ID (Stripe Product ID)
+        metadata:
+          type: object
+          description: 請求書に付与する任意のメタデータ
+          additionalProperties:
+            type: string
+      required:
+        - customer_id
+        - product_id
     InvoiceStatus:
       description: 請求書ステータス
       type: string
@@ -646,7 +695,7 @@ components:
         - uncollectible
         - void
       example: draft
-    PostMeInvoiceResponse:
+    PostInvoiceResponse:
       description: Invoice creation result
       type: object
       properties:
