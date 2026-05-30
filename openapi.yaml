@@ -1,4 +1,4 @@
-openapi: 3.1.0
+openapi: 3.0.3
 
 info:
   title: Checkin API
@@ -607,7 +607,6 @@ components:
           type: string
           description: normalized email
         redirect:
-          description: validated redirect path
           $ref: '#/components/schemas/RelativeRedirectPath'
       required:
         - email
@@ -764,8 +763,8 @@ components:
               status:
                 $ref: '#/components/schemas/InvoiceStatus'
               payment_intent:
-                type:
-                  - string
+                type: string
+                nullable: true
                 description: この請求書に関連付けられた PaymentIntent
                 example: pi_3MtwBwLkdIwHu7ix28a3tqPa
               product_id:
@@ -814,8 +813,8 @@ components:
                   - open
                 example: open
               payment_intent:
-                type:
-                  - string
+                type: string
+                nullable: true
                 description: この Checkout Session に関連付けられた PaymentIntent
                 example: pi_3MtwBwLkdIwHu7ix28a3tqPa
               product_id:
@@ -827,13 +826,7 @@ components:
       type: object
       additionalProperties: true
     MeResponse:
-      description: |
-        現在のセッション情報（ログインユーザー情報）
-        
-        【設計注記】
-        OpenAPI 3.1.0 の標準仕様としては `nullable: true` は非推奨であり、本来は `type: [string, "null"]` と定義すべきです。
-        しかし、Goの自動生成ツールである `oapi-codegen` (v2.7.x 時点) が OpenAPI 3.1.0 の Union型（型配列）のパースに対応しておらず、
-        ビルドエラー (`unhandled Schema type: &[string null]`) になるため、本プロジェクトでは意図的に `nullable: true` を使用しています。
+      description: 現在のセッション情報（ログインユーザー情報）
       type: object
       properties:
         email:
