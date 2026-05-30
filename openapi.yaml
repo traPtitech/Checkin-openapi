@@ -6,8 +6,6 @@ info:
   description: Checkin API
 
 security:
-  - EmailVerifiedSession: []
-    CsrfTokenHeader: []
   - NeoShowcaseAuth: []
     CsrfTokenHeader: []
 
@@ -177,7 +175,7 @@ paths:
       operationId: postAdminInvoice
       security:
         - NeoShowcaseAuth: []
-        - CsrfTokenHeader: []
+          CsrfTokenHeader: []
       requestBody:
         required: true
         content:
@@ -333,6 +331,11 @@ paths:
       tags:
         - User
       operationId: postMeCustomer
+      security:
+        - EmailVerifiedSession: []
+          CsrfTokenHeader: []
+        - NeoShowcaseAuth: []
+          CsrfTokenHeader: []
       requestBody:
         required: true
         content:
@@ -357,6 +360,11 @@ paths:
       tags:
         - User
       operationId: patchMeCustomer
+      security:
+        - EmailVerifiedSession: []
+          CsrfTokenHeader: []
+        - NeoShowcaseAuth: []
+          CsrfTokenHeader: []
       requestBody:
         required: true
         content:
@@ -382,6 +390,11 @@ paths:
       tags:
         - User
       operationId: postMeInvoice
+      security:
+        - EmailVerifiedSession: []
+          CsrfTokenHeader: []
+        - NeoShowcaseAuth: []
+          CsrfTokenHeader: []
       requestBody:
         required: true
         content:
@@ -452,7 +465,7 @@ paths:
       operationId: patchProduct
       security:
         - NeoShowcaseAuth: []
-        - CsrfTokenHeader: []
+          CsrfTokenHeader: []
       parameters:
         - name: id
           description: 商品ID (Stripe Product ID)
