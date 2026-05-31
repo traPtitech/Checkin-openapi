@@ -716,6 +716,7 @@ components:
           example: cus_NeZwdNtLEOXuvB
         traq_id:
           type: string
+          nullable: true
           description: traQ ID
           example: traP
         email:
@@ -726,6 +727,11 @@ components:
           type: string
           description: Name
           example: Jenny Rosen
+      required:
+        - id
+        - traq_id
+        - email
+        - name
     PostMeCustomerRequest:
       description: Customer 作成リクエスト
       type: object
