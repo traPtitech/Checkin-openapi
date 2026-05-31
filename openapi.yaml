@@ -373,6 +373,172 @@ paths:
           $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalServerError'
+
+  /prices:
+    get:
+      summary: 価格の一覧を取得
+      tags:
+        - Price
+      operationId: getPrices
+      security:
+        - EmailVerifiedSession: []
+        - NeoShowcaseAuth: []
+      parameters:
+        - name: active
+          description: 有効な価格のみを取得するか、無効な価格のみを取得するかを制御するフィルター
+          in: query
+          schema:
+            type: boolean
+            default: true
+        - name: product
+          description: 指定した商品ID (Stripe Product ID) に一致する価格のみをフィルターする
+          in: query
+          schema:
+            type: string
+        - name: type
+          description: 課金タイプ（単発または継続）でフィルターする
+          in: query
+          schema:
+            type: string
+            enum:
+              - one_time
+              - recurring
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/StartingAfter'
+        - $ref: '#/components/parameters/EndingBefore'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetPricesResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /prices/{id}:
+    patch:
+      summary: 価格を更新
+      description: "価格情報の更新権限を持つ管理者のみアクセス可能です。一般ユーザーの場合は 403 Forbidden を返します。"
+      tags:
+        - Price
+      operationId: patchPrice
+      security:
+        - NeoShowcaseAuth: []
+          CsrfTokenHeader: []
+      parameters:
+        - name: id
+          description: 価格ID (Stripe Price ID)
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchPriceRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Price'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /products:
+    get:
+      summary: 商品の一覧を取得
+      tags:
+        - Product
+      operationId: getProducts
+      security:
+        - EmailVerifiedSession: []
+        - NeoShowcaseAuth: []
+      parameters:
+        - name: active
+          description: 有効な商品のみを取得するか、無効な商品のみを取得するかを制御するフィルター
+          in: query
+          schema:
+            type: boolean
+            default: true
+        - name: ids
+          description: 指定した商品IDリストに一致する商品のみをフィルターするリスト
+          in: query
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+        - $ref: '#/components/parameters/Limit'
+        - $ref: '#/components/parameters/StartingAfter'
+        - $ref: '#/components/parameters/EndingBefore'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetProductsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /products/{id}:
+    patch:
+      summary: 商品を更新
+      description: "商品情報の更新権限を持つ管理者のみアクセス可能です。一般ユーザーの場合は 403 Forbidden を返します。"
+      tags:
+        - Product
+      operationId: patchProduct
+      security:
+        - NeoShowcaseAuth: []
+          CsrfTokenHeader: []
+      parameters:
+        - name: id
+          description: 商品ID (Stripe Product ID)
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchProductRequest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Product'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
 components:
   securitySchemes:
     EmailVerifiedSession:
@@ -542,9 +708,9 @@ components:
       type: object
       additionalProperties: false
       properties:
-        product_id:
+        price_id:
           type: string
-          description: 商品ID (Product ID)
+          description: 価格ID (Price ID)
         metadata:
           type: object
           description: 請求書に付与するメタデータ
@@ -554,7 +720,7 @@ components:
               type: string
               description: 再入部等でアカウント復旧の対象となる traQ ID
       required:
-        - product_id
+        - price_id
     InvoiceStatus:
       description: 請求書ステータス
       type: string
@@ -715,6 +881,170 @@ components:
         - is_admin
         - customer_id
 
+    Product:
+      description: 商品情報
+      type: object
+      properties:
+        id:
+          type: string
+          description: 商品ID (Stripe Product ID)
+          example: prod_NWjs8kKbJWmuuc
+        active:
+          type: boolean
+          description: この商品が新規購入可能かどうか
+          example: true
+        description:
+          type: string
+          nullable: true
+          description: 商品の説明文
+          example: サークルの一般会員向け年会費です。
+        metadata:
+          type: object
+          description: キーと値のペアからなるメタデータ情報
+          additionalProperties:
+            type: string
+        name:
+          type: string
+          description: 商品名
+          example: 年会費 (通常会員)
+      required:
+        - id
+        - active
+        - name
+
+    Price:
+      description: 価格情報
+      type: object
+      properties:
+        id:
+          type: string
+          description: 価格ID (Stripe Price ID)
+          example: price_1MoBy5LkdIwHu7ixZhnattbh
+        active:
+          type: boolean
+          description: この価格が新規購入に使用可能かどうか
+          example: true
+        currency:
+          type: string
+          description: 3文字のISO通貨コード (小文字)
+          example: jpy
+        product:
+          type: string
+          description: 商品ID (Stripe Product ID)
+          example: prod_NWjs8kKbJWmuuc
+        recurring:
+          type: object
+          nullable: true
+          description: 継続課金の周期や設定情報。単発課金の場合は null
+          additionalProperties: false
+          properties:
+            interval:
+              type: string
+              enum:
+                - day
+                - week
+                - month
+                - year
+              description: サブスクリプションが請求される頻度
+              example: year
+            interval_count:
+              type: integer
+              description: 請求周期の間隔
+              example: 1
+          required:
+            - interval
+            - interval_count
+        type:
+          type: string
+          enum:
+            - one_time
+            - recurring
+          description: 価格が単発購入用か継続購入(サブスクリプション)用か
+          example: recurring
+        unit_amount:
+          type: integer
+          format: int64
+          nullable: true
+          description: 課金される最小通貨単位での単価 (日本円の場合は1円単位)
+          example: 2000
+      required:
+        - id
+        - active
+        - currency
+        - product
+        - recurring
+        - type
+        - unit_amount
+
+    GetPricesResponse:
+      description: 価格一覧の取得レスポンス
+      type: object
+      properties:
+        has_more:
+          type: boolean
+          description: 次のページがあるか
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Price'
+      required:
+        - has_more
+        - data
+
+    PatchPriceRequest:
+      description: 価格更新リクエスト
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        active:
+          type: boolean
+          description: この価格が新規購入に使用可能かどうか
+        metadata:
+          type: object
+          description: 価格に付与する任意のメタデータ情報。Stripe上の値が上書きされます。
+          additionalProperties:
+            type: string
+
+    GetProductsResponse:
+      description: 商品一覧の取得レスポンス
+      type: object
+      properties:
+        has_more:
+          type: boolean
+          description: 次のページがあるか
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+      required:
+        - has_more
+        - data
+
+    PatchProductRequest:
+      description: 商品更新リクエスト
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        active:
+          type: boolean
+          description: この商品が新規購入可能かどうか
+        description:
+          type: string
+          nullable: true
+          description: 商品の説明文
+          maxLength: 500
+        metadata:
+          type: object
+          description: 商品に付与する任意のメタデータ情報。Stripe上の値が上書きされます。
+          additionalProperties:
+            type: string
+        name:
+          type: string
+          description: 商品名
+          maxLength: 100
+
 tags:
   - name: Auth
     description: Auth API
@@ -728,3 +1058,7 @@ tags:
     description: CheckoutSession API
   - name: Admin
     description: Admin API
+  - name: Product
+    description: Product API
+  - name: Price
+    description: Price API
