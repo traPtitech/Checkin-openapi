@@ -250,11 +250,7 @@ paths:
           description: Checkout Session のステータス
           in: query
           schema:
-            type: string
-            enum:
-              - complete
-              - expired
-              - open
+            $ref: '#/components/schemas/CheckoutSessionStatus'
       responses:
         '200':
           description: OK
@@ -798,6 +794,14 @@ components:
         - uncollectible
         - void
       example: draft
+    CheckoutSessionStatus:
+      description: Checkout Session のステータス
+      type: string
+      enum:
+        - complete
+        - expired
+        - open
+      example: open
     PostInvoiceResponse:
       description: Invoice creation result
       type: object
@@ -896,13 +900,7 @@ components:
               customer:
                 $ref: '#/components/schemas/Customer'
               status:
-                type: string
-                description: Checkout Session のステータス
-                enum:
-                  - complete
-                  - expired
-                  - open
-                example: open
+                $ref: '#/components/schemas/CheckoutSessionStatus'
               payment_intent:
                 type: string
                 nullable: true
